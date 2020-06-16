@@ -1,0 +1,1642 @@
+﻿GladiusEx = LibStub("AceAddon-3.0"):NewAddon("GladiusEx", "AceEvent-3.0", "AceTimer-3.0")
+
+local fn = LibStub("LibFunctional-1.0")
+--local LSR = LibStub("LibSpecRoster-1.0")
+local L = LibStub("AceLocale-3.0"):GetLocale("GladiusEx")
+local RC = LibStub("LibRangeCheck-2.0")
+local LSM = LibStub("LibSharedMedia-3.0")
+
+-- upvalues
+local select, type, pairs, tonumber, wipe = select, type, pairs, tonumber, wipe
+local strfind, strmatch = string.find, string.match
+local max, abs, floor, ceil = math.max, math.abs, math.floor, math.ceil
+local UnitIsDeadOrGhost, UnitGUID, UnitExists = UnitIsDeadOrGhost, UnitGUID, UnitExists
+local InCombatLockdown = InCombatLockdown
+local GetNumArenaOpponents, GetNumPartyMembers = GetNumArenaOpponents, GetNumPartyMembers
+
+local arena_units = {
+	["arena1"] = true,
+	["arena2"] = true,
+	["arena3"] = true,
+	["arena4"] = true,
+	["arena5"] = true,
+}
+
+local party_units = {
+	["player"] = true,
+	["party1"] = true,
+	["party2"] = true,
+	["party3"] = true,
+	["party4"] = true,
+}
+
+local specNameToID = {
+	["Blood"] = 250,
+	["Frost"] = 251,
+	["Unholy"] = 252,
+	["Havoc"] = 577,
+	["Vengeance"] = 581,
+	["Balance"] = 102,
+	["Feral"] = 103,
+	["Restoration"] = 105,
+	["Beast Mastery"] = 253,
+	["Marksmanship"] = 254,
+	["Survival"] = 255,
+	["Arcane"] = 62,
+	["Fire"] = 63,
+	["Frost"] = 64,
+	["Holy"] = 65,
+	["Protection"] = 66,
+	["Retribution"] = 70,
+	["Discipline"] = 256,
+	["Holy"] = 257,
+	["Shadow"] = 258,
+	["Assassination"] = 259,
+	["Combat"] = 260,
+	["Subtlety"] = 261,
+	["Elemental"] = 262,
+	["Enhancement"] = 263,
+	["Restoration"] = 264,
+	["Affliction"] = 265,
+	["Demonology"] = 266,
+	["Destruction"] = 267,
+	["Arms"] = 71,
+	["Fury"] = 72,
+	["Protection"] = 73
+}
+
+GladiusEx.party_units = party_units
+GladiusEx.arena_units = arena_units
+
+local anchor_width = 260
+local anchor_height = 40
+
+local STATE_NORMAL = 0
+local STATE_DEAD = 1
+local STATE_STEALTH = 2
+local RANGE_UPDATE_INTERVAL = 1 / 5
+
+-- debugging output
+local log_frame
+local log_table
+local logging = false
+local function log(...)
+	if not GladiusEx:IsDebugging() then return end
+	if not log_frame then
+		log_frame = CreateFrame("ScrollingMessageFrame", "GladiusExLogFrame")
+
+		log_frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 10, -50)
+		log_frame:SetFrameStrata("LOW")
+
+		log_frame:SetScript("OnMouseWheel", FloatingChatFrame_OnMouseScroll)
+		log_frame:EnableMouseWheel(true)
+
+		log_frame:SetSize(500, 500)
+		log_frame:SetFont(STANDARD_TEXT_FONT, 9, "NONE")
+		log_frame:SetShadowColor(0, 0, 0, 1)
+		log_frame:SetShadowOffset(1, -1)
+		log_frame:SetFading(false)
+		log_frame:SetJustifyH("LEFT")
+		log_frame:SetIndentedWordWrap(true)
+		log_frame:SetMaxLines(10000)
+		log_frame:SetBackdropColor(1, 1, 1, 0.2)
+		log_frame.starttime = GetTime()
+
+		log_frame:SetScale(1)
+	end
+	local p = ...
+	if p == "ENABLE LOGGING" then
+		GladiusEx.db.base.log = GladiusEx.db.base.log or {}
+		log_table = { date("%c", time()) }
+		table.insert(GladiusEx.db.base.log, log_table)
+		logging = true
+		log_frame.starttime = GetTime()
+	elseif p == "DISABLE LOGGING" then
+		logging = false
+	end
+
+	local msg = string.format("[%.1f] %s", GetTime() - log_frame.starttime, strjoin(" ", tostringall(...)))
+
+	if logging then
+		table.insert(log_table, msg)
+	end
+
+	log_frame:AddMessage(msg)
+end
+
+function GladiusEx:IsDebugging()
+	return self.db.base.debug
+end
+
+function GladiusEx:SetDebugging(enabled)
+	self.db.base.debug = enabled
+end
+
+function GladiusEx:Log(...)
+	log(...)
+end
+
+function GladiusEx:Debug(...)
+	print("|cff33ff99GladiusEx|r:", ...)
+end
+
+function GladiusEx:Print(...)
+	print("|cff33ff99GladiusEx|r:", ...)
+end
+
+-- Module prototype
+local modulePrototype = {}
+
+function modulePrototype:GetAttachType()
+	return "Widget"
+end
+
+function modulePrototype:GetFrames(unit)
+	if self.frame and self.frame[unit] then
+		return { self.frame[unit] }
+	end
+end
+
+function modulePrototype:GetOtherAttachPoints(unit)
+	return GladiusEx:GetAttachPoints(unit, self)
+end
+
+function modulePrototype:InitializeDB(name, defaults)
+	local dbi = GladiusEx.dbi:RegisterNamespace(name, { profile = defaults })
+	dbi.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
+	dbi.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
+	dbi.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
+	return dbi
+end
+
+function modulePrototype:OnInitialize()
+	self.dbi_arena = self:InitializeDB(self:GetName(), self.defaults_arena)
+	self.dbi_party = self:InitializeDB("party_" .. self:GetName(), self.defaults_party)
+	self.db = setmetatable({}, {
+		__index = function(t, k)
+			local v
+			k = strmatch(k, "^(.+)target$") or strmatch(k, "^(.+)pet(.+)$") or k
+			if k == "target" or k == "pet" or k == "party" or GladiusEx:IsPartyUnit(k) then
+				v = self.dbi_party.profile
+			elseif k == "arena" or GladiusEx:IsArenaUnit(k) then
+				v = self.dbi_arena.profile
+			else
+				error("Bad module DB usage: not an unit (" .. tostring(k) .. ")", 2)
+			end
+			rawset(t, k, v)
+			return v
+		end
+	})
+end
+
+function modulePrototype:OnProfileChanged()
+	wipe(self.db)
+end
+
+function modulePrototype:IsUnitEnabled(unit)
+	return GladiusEx:IsModuleEnabled(unit, self:GetName())
+end
+
+GladiusEx:SetDefaultModulePrototype(modulePrototype)
+GladiusEx:SetDefaultModuleLibraries("AceEvent-3.0")
+GladiusEx:SetDefaultModuleState(false)
+
+function GladiusEx:NewGladiusExModule(name, defaults_arena, defaults_party, ...)
+	local module = self:NewModule(name, ...)
+	module.super = modulePrototype
+	module.defaults_arena = defaults_arena
+	module.defaults_party = defaults_party or defaults_arena
+	return module
+end
+
+function GladiusEx:GetAttachPoints(unit, skip)
+	-- get module list for frame anchor
+	local t = { ["Frame"] = L["Frame"] }
+	for name, m in GladiusEx:IterateModules() do
+		if m ~= skip and self:IsModuleEnabled(unit, name) then
+			local points = m.GetModuleAttachPoints and m:GetModuleAttachPoints(unit)
+			if points then
+				for point, name  in pairs(points) do
+					t[point] = name
+				end
+			end
+		end
+	end
+
+	return t
+end
+
+function GladiusEx:GetAttachFrame(unit, point, nodefault)
+	-- get parent frame
+	if point == "Frame" then
+		return self.buttons[unit]
+	else
+		for name, m in self:IterateModules() do
+			if self:IsModuleEnabled(unit, name) then
+				local points = m.GetModuleAttachPoints and m:GetModuleAttachPoints(unit)
+				if points and points[point] then
+					local f = m:GetModuleAttachFrame(unit, point)
+					return f or (not nodefault and self.buttons[unit])
+				end
+			end
+		end
+	end
+	-- default to frame
+	return not nodefault and self.buttons[unit]
+end
+
+function GladiusEx:OnInitialize()
+	-- init db+
+	self.dbi = LibStub("AceDB-3.0"):New("GladiusExDB", self.defaults)
+	self.dbi_arena = self.dbi:RegisterNamespace("arena", { profile = self.defaults_arena })
+	self.dbi_party = self.dbi:RegisterNamespace("party", { profile = self.defaults_party })
+	self.db = setmetatable({}, {
+		__index = function(t, k)
+			local v
+			if k == "party" or GladiusEx:IsPartyUnit(k) then
+				v = self.dbi_party.profile
+			elseif k == "arena" or GladiusEx:IsArenaUnit(k) then
+				v = self.dbi_arena.profile
+			elseif k == "base" then
+				v = self.dbi.profile
+			else
+				error("Bad DB usage: not an unit (" .. tostring(k) .. ")", 2)
+			end
+			rawset(t, k, v)
+			return v
+		end
+	})
+
+	-- libsharedmedia
+	LSM:Register("statusbar", "Minimalist (GladiusEx)", [[Interface\Addons\GladiusEx\media\Minimalist]])
+	LSM:Register("statusbar", "Wglass (GladiusEx)", [[Interface\Addons\GladiusEx\media\Wglass]])
+	LSM:Register("font", "Designosaur (GladiusEx)", [[Interface\Addons\GladiusEx\media\Designosaur-Regular.ttf]])
+	LSM:Register("font", "Designosaur Italic (GladiusEx)", [[Interface\Addons\GladiusEx\media\Designosaur-Italic.ttf]])
+
+	-- test environment
+	self.test = false
+	self.testing = setmetatable({}, {
+		__index = function(t, k)
+				if not self.db.base.testUnits[k] then k = "arena1" end
+				return self.db.base.testUnits[k]
+			end
+		})
+        
+    -- spec detection
+	self.specSpells = self:GetSpecList()
+
+	-- buttons
+	self.buttons = {}
+
+	-- debugging code for finding unused locale strings
+	--[[
+	setmetatable(L, {})
+	local myl = fn.clone(L)
+	local myl_count = fn.clone(L)
+	for k in pairs(myl_count) do
+		myl_count[k] = 0
+	end
+
+	wipe(L)
+	setmetatable(L, {
+		__index = function(self, k, v)
+			myl_count[k] = myl_count[k] + 1
+			return "!" .. tostring(myl[k])
+		end
+		})
+
+	function GladiusEx:PrintUnused()
+		local l = {}
+		for k, v in pairs(myl_count) do
+			if v == 0 then
+				tinsert(l, k)
+			end
+		end
+		l = fn.filter(l, function(k)
+				if k:match("Tag$") or k:match(":short$") then
+					return false
+				end
+				return true
+			end)
+		l = fn.sort(l)
+		print(table.concat(l, "\n"))
+	end
+	]]
+end
+
+function GladiusEx:IsModuleEnabled(unit, name)
+	return self.db[unit].modules[name]
+end
+
+function GladiusEx:CheckEnableDisableModule(name)
+	local mod = self:GetModule(name)
+
+	-- hide module if it is being disabled
+	if mod:IsEnabled() and mod.Reset then
+		if not self:IsModuleEnabled("party", name) then
+			for unit, button in pairs(self.buttons) do
+				if self:IsPartyUnit(unit) then
+					mod:Reset(unit)
+				end
+			end
+		end
+		if not self:IsModuleEnabled("arena", name) then
+			for unit, button in pairs(self.buttons) do
+				if self:IsArenaUnit(unit) then
+					mod:Reset(unit)
+				end
+			end
+		end
+	end
+
+	if self:IsModuleEnabled("party", name) or self:IsModuleEnabled("arena", name) then
+		self:EnableModule(name)
+	else
+		self:DisableModule(name)
+	end
+end
+
+function GladiusEx:EnableModules()
+	for module_name in self:IterateModules() do
+		self:CheckEnableDisableModule(module_name)
+	end
+end
+
+function GladiusEx:OnEnable()
+	-- create frames
+	-- anchor & background
+	self.party_parent = CreateFrame("Frame", "GladiusExPartyFrame", UIParent)
+	self.arena_parent = CreateFrame("Frame", "GladiusExArenaFrame", UIParent)
+	self.party_parent:Hide()
+	self.arena_parent:Hide()
+
+	self.arena_anchor, self.arena_background = self:CreateAnchor("arena")
+	self.party_anchor, self.party_background = self:CreateAnchor("party")
+
+	-- update roster
+	self:UpdateAllGUIDs()
+
+	-- update range checkers
+	self:UpdateRangeCheckers()
+
+	-- enable modules
+	self:EnableModules()
+
+	-- init options
+	self:SetupOptions()
+
+	-- register the appropriate events
+	self:RegisterEvent("PLAYER_ENTERING_WORLD")
+	
+	-- this event works in all expansions from WotLK and forward
+	self:RegisterEvent("ARENA_OPPONENT_UPDATE")
+    
+	-- spec detection
+	self:RegisterEvent("UNIT_AURA")	
+	self:RegisterEvent("UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    
+	self:RegisterEvent("UNIT_NAME_UPDATE")
+	self:RegisterEvent("UNIT_HEALTH")
+	self:RegisterEvent("UNIT_MAXHEALTH", "UNIT_HEALTH")
+	self:RegisterEvent("PARTY_MEMBERS_CHANGED")
+	self:RegisterEvent("PLAYER_REGEN_ENABLED")
+	self:RegisterEvent("UNIT_PET", "UpdateUnitGUID")
+	self:RegisterEvent("UNIT_PORTRAIT_UPDATE", "UpdateUnitGUID")
+	RC.RegisterCallback(self, RC.CHECKERS_CHANGED, "UpdateRangeCheckers")
+	self.dbi.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
+	self.dbi.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
+	self.dbi.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
+end
+
+local first_run = false
+function GladiusEx:CheckFirstRun()
+	if first_run then return end
+	first_run = true
+	-- display help message
+	if (not self.db.base.locked and not self.db.arena.x["arena1"] and not self.db.arena.y["arena1"] and not self.db.arena.x["anchor_arena"] and not self.db.arena.y["anchor_arena"]) then
+		self:Print(L["Welcome to GladiusEx!"])
+		self:Print(L["First run has been detected, displaying test frame"])
+		self:Print(L["Valid slash commands are:"])
+		self:Print("/gex ui")
+		self:Print("/gex test 2-5")
+		self:Print("/gex hide")
+		self:Print("/gex reset")
+		self:Print(L["** If this is not your first run please lock or move the frame to prevent this from happening **"])
+
+		self:SetTesting(3)
+	elseif self:IsDebugging() then
+		self:SetTesting(3)
+	end
+end
+
+function GladiusEx:OnDisable()
+	self:UnregisterAllEvents()
+	--LSR.UnregisterAllMessages(self)
+	self.dbi.UnregisterAllEvents(self)
+	self:HideFrames()
+end
+
+function GladiusEx:OnProfileChanged(event, database, newProfileKey)
+	-- update frame and modules on profile change
+	wipe(self.db)
+
+	self:SetupOptions()
+	self:EnableModules()
+	self:UpdateFrames()
+
+	-- make sure that party is shown/hidden if its enabled state changed in the new profile
+	if GladiusEx:IsArenaShown() then
+		GladiusEx:HideFrames()
+		GladiusEx:ShowFrames()
+	end
+end
+
+function GladiusEx:SetTesting(count)
+	self.test = count
+	self:UpdateFrames()
+
+	if count then
+		self:ShowFrames()
+	else
+		self:HideFrames()
+	end
+end
+
+function GladiusEx:IsTesting(unit)
+	if not self.test then
+		return false
+	elseif unit then
+		return not UnitExists(unit)
+	else
+		return self.test
+	end
+end
+
+function GladiusEx:GetArenaSize(min_size)
+	if self:IsTesting() then
+		log("GetArenaSize => testing")
+		return self:IsTesting()
+	end
+
+	-- if this is nil we either have not started or we are spectating
+	local alwaysUpPlayers = self:GetAlwaysUpFrameForPlayers()
+	
+	-- try to guess the minimal possible (current) arena size
+	local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, GetNumPartyMembers()+1)
+
+	log("GetArenaSize", min_size, self.seenPlayers, GetNumPartyMembers(),
+		" => ", min_possible_size)
+
+	if min_possible_size >= 4 then
+		min_possible_size = 5
+	end
+
+	-- we could've seen a bigger size before (someone died/left) so need to use max
+	self.seenPlayers = max(self.seenPlayers or 1, min_possible_size)
+	
+	return self.seenPlayers
+end
+
+function GladiusEx:CheckArenaSize(unit)
+	local min_size = 0
+	if unit then
+		min_size = self:GetUnitIndex(unit)
+	end
+
+	local size = self:GetArenaSize(min_size)
+
+	log("CheckArenaSize", unit, unit and UnitName(unit) or "none", min_size, size)
+
+	if self.arena_size ~= size then
+		log("Arena size change detected", self.arena_size, " => ", size)
+		self.arena_size = size
+		self:UpdateFrames()
+		return true
+	end
+end
+
+function GladiusEx:GetAlwaysUpFrameForPlayers()
+    local txt = nil
+    for i=1,2 do 
+        if _G["AlwaysUpFrame"..i.."Text"] then
+			txt = txt or 0
+            local frame = _G["AlwaysUpFrame"..i.."Text"]
+            local _,tmp = strsplit(":", frame:GetText(), 2)
+            tmp = strsplit("Players", tmp)
+            if tonumber(tmp) then
+                txt = max(tonumber(tmp), txt)
+            else
+                return nil
+            end
+        end
+    end
+    return txt
+end
+
+function GladiusEx:UpdatePartyFrames()
+	if InCombatLockdown() then
+		self:QueueUpdate()
+		return
+	end
+    
+	local group_members = self:GetArenaSize()
+
+	log("UpdatePartyFrames", group_members)
+	self:UpdateAnchor("party")
+
+	for i = 1, 5 do
+		local unit = i == 1 and "player" or ("party" .. (i - 1))
+		if group_members >= i then
+			self:UpdateUnit(unit)
+			self:UpdateUnitState(unit, false)
+			self:ShowUnit(unit)
+
+            -- Do question mark icon!
+			if not self:IsTesting() and not UnitExists(unit) then
+				self:SoftHideUnit(unit)
+			end
+
+			-- test environment
+			if self:IsTesting(unit) then
+				self:TestUnit(unit)
+			else
+				self:RefreshUnit(unit)
+			end
+		else
+			self:HideUnit(unit)
+		end
+	end
+	if self.db.base.hideSelf then
+		self:HideUnit("player")
+	end
+
+	self:UpdateBackground("party")
+end
+
+function GladiusEx:UpdateArenaFrames()
+	if InCombatLockdown() then
+		self:QueueUpdate()
+		return
+	end
+    
+    self:GetArenaSize()
+	local numOpps = self.arena_size
+
+	self:UpdateAnchor("arena")
+
+	for i = 1, 5 do
+		local unit = "arena" .. i
+		if numOpps >= i then
+			self:UpdateUnit(unit)
+			self:UpdateUnitState(unit, UnitExists(unit) == nil)
+			self:ShowUnit(unit)
+
+			-- test environment
+			if self:IsTesting(unit) then
+				self:TestUnit(unit)
+			else
+				self:RefreshUnit(unit)
+			end
+		else
+			self:HideUnit(unit)
+		end
+	end
+
+	self:UpdateBackground("arena")
+end
+
+function GladiusEx:UpdateFrames()
+	log("UpdateFrames")
+
+	if not self:IsPartyShown() and not self:IsArenaShown() then return end
+
+	if not self.arena_size then
+		self:CheckArenaSize()
+	end
+
+	self:UpdatePartyFrames()
+	self:UpdateArenaFrames()
+    self:UpdateAllGUIDs()
+	if not InCombatLockdown() then
+		self:ClearUpdateQueue()
+	end
+end
+
+function GladiusEx:ShowFrames()
+	if InCombatLockdown() then
+		self:QueueUpdate()
+	end
+
+	local function show_anchor(anchor_type)
+		if self.db[anchor_type].groupButtons then
+			local anchor, background = self:GetAnchorFrames(anchor_type)
+			background:Show()
+
+			if not self.db.base.locked then
+				anchor:Show()
+			end
+		end
+	end
+
+ 	if self.db.base.showArena then
+ 		show_anchor("arena")
+ 		self.arena_parent:Show()
+ 	end
+
+	if self.db.base.showParty then
+		show_anchor("party")
+		self.party_parent:Show()
+	end
+
+	local updated = self:CheckArenaSize()
+	if true then
+		-- refresh buttons
+		for unit in pairs(self.buttons) do
+			self:RefreshUnit(unit)
+		end
+	end
+end
+
+function GladiusEx:HideFrames()
+	if InCombatLockdown() then
+		self:QueueUpdate()
+	end
+
+	-- hide frames instead of just setting alpha to 0
+	for unit, button in pairs(self.buttons) do
+		-- reset spec data
+		button.class = nil
+		button.specID = nil
+		button.unit_state = nil
+
+		-- hide frame
+		self:HideUnit(unit)
+	end
+
+	self.arena_parent:Hide()
+	self.party_parent:Hide()
+	self.arena_size = nil
+    self.knownSpecs = nil
+    self.seenPlayers = nil
+end
+
+function GladiusEx:IsPartyShown()
+	return self.party_parent:IsShown()
+end
+
+function GladiusEx:IsArenaShown()
+	return self.arena_parent:IsShown()
+end
+
+function GladiusEx:PLAYER_ENTERING_WORLD()
+	local instanceType = select(2, IsInInstance())
+
+	-- check if we are entering or leaving an arena
+	if instanceType == "arena" then
+		self:SetTesting(false)
+		
+		self:ShowFrames()
+		log("ENABLE LOGGING")
+		
+		-- This will call CheckArenaSize and then iterate over all party members / enemies based on self.arena_size
+		-- performing the same activities as ARENA_OPPONENT_UPDATE for each unit
+        self:UpdateFrames()
+		
+		local seen = self:GetAlwaysUpFrameForPlayers()
+        if seen and seen == 0 then -- Spectating (text shows "0 Players Remaining")
+			self:StartSpectate()
+        elseif (seen and seen > 0) or UnitExists("arena1") or UnitExists("arena2") or UnitExists("arena3") or UnitExists("arena3") or UnitExists("arena5") then -- Inside (started)
+            -- game is already started, try to identify spec and classes immediately
+			self:ReloadFixTrackClassesSpecs()
+        end
+        -- if seen is nil the game hasn't started yet
+		
+		-- monitor for class/spec
+        self:RegisterEvent("UNIT_AURA")
+        self:RegisterEvent("UNIT_SPELLCAST_START")
+		self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    else
+		self:CheckFirstRun()
+
+		if not self:IsTesting() then
+			self:HideFrames()
+		end
+		if logging then log("DISABLE LOGGING") end
+	end
+end
+
+function GladiusEx:ReloadFixTrackClassesSpecs(msg)
+	-- Identify players
+	for i = 1, self.seenPlayers do
+		self:IdentifyUnitClass("arena"..i)
+		self:UNIT_AURA(nil, "arena"..i) -- check for spec by looking at auras
+	end
+end
+
+function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
+	log("ARENA_OPPONENT_UPDATE", unit, type)
+	-- ignore pets
+	if not self:IsArenaUnit(unit) then return end
+
+	if type == "seen" then
+		self:UpdateUnitState(unit, false)
+		self:ShowUnit(unit)
+		self:CheckArenaSize(unit)
+	elseif type == "destroyed" or type == "unseen" then
+		self:UpdateUnitState(unit, true)
+	elseif type == "cleared" then
+		if not self:IsTesting() then
+			self:SoftHideUnit(unit)
+		end
+	end
+	self:RefreshUnit(unit)
+end
+
+function GladiusEx:IdentifyUnitClass(unit)
+    if UnitClass(unit) and self.buttons[unit].class == nil then
+        self.buttons[unit].class = select(2, UnitClass(unit))
+        self:RefreshUnit(unit)
+    end
+end
+
+function GladiusEx:IdentifyUnitSpecialization(unit, name)
+	if self.knownSpecs == self.arena_size and not self:IsTesting() then
+        self:UnregisterEvent("UNIT_AURA")
+        self:UnregisterEvent("UNIT_SPELLCAST_START")
+		self:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+        return
+    end
+	
+	local specname = self.specSpells[name]
+	if (specname and self.buttons[unit] and (self.buttons[unit].specID == nil)) then
+		 self.buttons[unit].specID = tonumber(specNameToID[tostring(specname)] or 0)
+		 self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
+		 self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
+	end     
+end
+
+function GladiusEx:UNIT_AURA(event, unit)
+    if (not self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+    
+	self:IdentifyUnitClass(unit)
+    
+	for index = 1, 40 do
+        local  name, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
+        if (not name) then break end
+		self:IdentifyUnitSpecialization(unitCaster, name)
+	end
+end
+
+function GladiusEx:UNIT_SPELLCAST_SUCCEEDED(event, unit, name)
+    if (not self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+
+	self:IdentifyUnitClass(unit)
+    self:IdentifyUnitSpecialization(unit, name)
+end
+
+function GladiusEx:UNIT_SPELLCAST_START(event, unit)
+    if (not self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+
+	self:IdentifyUnitClass(unit)  
+       
+    local name = UnitCastingInfo(unit)   
+    self:IdentifyUnitSpecialization(unit, name)
+end
+
+function GladiusEx:PARTY_MEMBERS_CHANGED()
+	if self:IsArenaShown() or self:IsPartyShown() then
+		self:UpdateAllGUIDs()
+		local u = self:CheckArenaSize()
+		if not u then
+			self:UpdateFrames()
+		end
+	end
+end
+
+function GladiusEx:QueueUpdate()
+	self.update_pending = true
+	log("Update Queued")
+end
+
+function GladiusEx:IsUpdatePending()
+	return self.update_pending
+end
+
+function GladiusEx:ClearUpdateQueue()
+	self.update_pending = false
+end
+
+function GladiusEx:PLAYER_REGEN_ENABLED()
+	if self:IsUpdatePending() then
+		self:UpdateFrames()
+	end
+end
+
+function GladiusEx:UNIT_NAME_UPDATE(event, unit)
+	if not self:IsHandledUnit(unit) then return end
+
+	self:UpdateUnitGUID(event, unit)
+	self:CheckArenaSize(unit)
+	self:UpdateUnitState(unit)
+	self:RefreshUnit(unit)
+end
+
+guid_to_unitid = {}
+
+function GladiusEx:GetUnitIdByGUID(guid)
+	return guid_to_unitid[guid]
+end
+
+function GladiusEx:UpdateAllGUIDs()
+	for unit in pairs(party_units) do self:UpdateUnitGUID("UpdateAllGUIDs", unit) end
+	for unit in pairs(arena_units) do self:UpdateUnitGUID("UpdateAllGUIDs", unit) end
+end
+
+function GladiusEx:UpdateUnitGUID(event, unit)
+	if self:IsHandledUnit(unit) then
+		-- find and delete old reference to that unit
+		for guid, unitid in pairs(guid_to_unitid) do
+			if unitid == unit then
+				guid_to_unitid[guid] = nil
+				break
+			end
+		end
+		-- add guid
+		local guid = UnitGUID(unit)
+		if guid then
+			guid_to_unitid[guid] = unit
+		end
+	end
+end
+
+function GladiusEx:UNIT_HEALTH(event, unit)
+	if not self.buttons[unit] then return end
+
+	self:UpdateUnitState(unit, false)
+end
+
+local range_check
+function GladiusEx:UpdateRangeCheckers()
+	range_check = RC:GetSmartMinChecker(40)
+end
+
+
+local function FrameRangeChecker_OnUpdate(f, elapsed)
+	f.elapsed = f.elapsed + elapsed
+
+	if f.elapsed >= RANGE_UPDATE_INTERVAL then
+		f.elapsed = 0
+		local unit = f.unit
+
+		if GladiusEx:IsTesting(unit) then
+			f:SetAlpha(1)
+		end
+
+		if not UnitExists(unit) then
+			-- should probably remove the OnUpdate handler here
+			return
+		end
+
+		if range_check(unit) then
+			f:SetAlpha(1)
+		else
+			f:SetAlpha(GladiusEx.db[unit].oorAlpha)
+		end
+	end
+end
+
+function GladiusEx:UpdateUnitState(unit, stealth)
+	if not self.buttons[unit] then return end
+
+	if UnitIsDeadOrGhost(unit) then
+		self.buttons[unit].unit_state = STATE_DEAD
+		self.buttons[unit]:SetScript("OnUpdate", nil)
+		self.buttons[unit]:SetAlpha(self.db[unit].deadAlpha)
+	elseif stealth then
+		self.buttons[unit].unit_state = STATE_STEALTH
+		self.buttons[unit]:SetScript("OnUpdate", nil)
+		self.buttons[unit]:SetAlpha(self.db[unit].stealthAlpha)
+	else
+		self.buttons[unit].unit_state = STATE_NORMAL
+		self.buttons[unit]:SetScript("OnUpdate", FrameRangeChecker_OnUpdate)
+		FrameRangeChecker_OnUpdate(self.buttons[unit], RANGE_UPDATE_INTERVAL + 1)
+	end
+end
+
+function GladiusEx:IsHandledUnit(unit)
+	return arena_units[unit] or party_units[unit]
+end
+
+function GladiusEx:IsArenaUnit(unit)
+	return arena_units[unit]
+end
+
+function GladiusEx:IsPartyUnit(unit)
+	return party_units[unit]
+end
+
+function GladiusEx:TestUnit(unit)
+	if not self:IsHandledUnit(unit) then return end
+
+	-- test modules
+	for n, m in self:IterateModules() do
+		if self:IsModuleEnabled(unit, n) and m.Test then
+			m:Test(unit)
+		end
+	end
+
+	-- lower secure frame in test mode so we can move the frame
+	self.buttons[unit]:SetFrameStrata("LOW")
+	self.buttons[unit].secure:SetFrameStrata("BACKGROUND")
+end
+
+function GladiusEx:RefreshUnit(unit)
+	if not self.buttons[unit] or self:IsTesting(unit) then return end
+
+	-- refresh modules
+	for n, m in self:IterateModules() do
+		if self:IsModuleEnabled(unit, n) and m.Refresh then
+			m:Refresh(unit)
+		end
+	end
+end
+
+function GladiusEx:ShowUnit(unit)
+	log("ShowUnit", unit)
+	if not self.buttons[unit] then return end
+
+	-- show modules
+	for n, m in self:IterateModules() do
+		if self:IsModuleEnabled(unit, n) and m.Show then
+			m:Show(unit)
+		end
+	end
+
+	-- show button
+	self.buttons[unit]:SetAlpha(1)
+	if not self.buttons[unit]:IsShown() then
+		if not InCombatLockdown() then
+			self.buttons[unit]:Show()
+		else
+			self:QueueUpdate()
+			log("ShowUnit: tried to show, but InCombatLockdown")
+		end
+	end
+end
+
+function GladiusEx:SoftHideUnit(unit)
+	log("SoftHideUnit", unit)
+	if not self.buttons[unit] then return end
+
+	-- hide modules
+	for n, m in self:IterateModules() do
+		if self:IsModuleEnabled(unit, n) then
+			if m.Reset then
+				m:Reset(unit)
+			end
+		end
+	end
+
+	-- hide the button
+	self.buttons[unit]:SetAlpha(0)
+end
+
+function GladiusEx:HideUnit(unit)
+	log("HideUnit", unit)
+	if not self.buttons[unit] then return end
+
+	self:SoftHideUnit(unit)
+
+	if InCombatLockdown() then
+		self:QueueUpdate()
+	else
+		self.buttons[unit]:Hide()
+	end
+end
+
+function GladiusEx:CreateUnit(unit)
+	local button = CreateFrame("Frame", "GladiusExButtonFrame" .. unit, self:IsArenaUnit(unit) and self.arena_parent or self.party_parent)
+	self.buttons[unit] = button
+
+	button.elapsed = 0
+	button.unit = unit
+
+	button:SetClampedToScreen(true)
+	button:EnableMouse(true)
+	button:SetMovable(true)
+
+	button:RegisterForDrag("LeftButton")
+
+	local drag_anchor_type = self:GetUnitAnchorType(unit)
+	local drag_anchor_frame = self:GetUnitAnchor(unit)
+
+	button:SetScript("OnMouseDown", function(f, button)
+		if button == "RightButton" then
+			self:ShowOptionsDialog()
+		end
+	end)
+
+	button:SetScript("OnDragStart", function(f)
+		if not InCombatLockdown() and not self.db.base.locked then
+			local f = self.db[unit].groupButtons and drag_anchor_frame or f
+			f:StartMoving()
+		end
+	end)
+
+	button:SetScript("OnDragStop", function(f)
+		local f = self.db[unit].groupButtons and drag_anchor_frame or f
+		f:StopMovingOrSizing()
+
+		if self.db[unit].groupButtons then
+			self:SaveAnchorPosition(drag_anchor_type)
+		else
+			local scale = f:GetEffectiveScale()
+			self.db[unit].x[unit] = f:GetLeft() * scale
+			self.db[unit].y[unit] = f:GetTop() * scale
+		end
+	end)
+
+	-- hide
+	button:SetAlpha(0)
+	button:Hide()
+
+	-- secure button
+	button.secure = CreateFrame("Button", "GladiusExSecureButton" .. unit, button, "SecureActionButtonTemplate")
+	button.secure:SetAllPoints()
+	button.secure:SetAttribute("unit", unit)
+	button.secure:RegisterForClicks("AnyDown")
+	button.secure:SetAttribute("*type1", "target")
+	button.secure:SetAttribute("*type2", "focus")
+
+	-- clique support
+	ClickCastFrames = ClickCastFrames or {}
+	ClickCastFrames[button.secure] = true
+end
+
+function GladiusEx:SaveAnchorPosition(anchor_type)
+	local anchor = self:GetAnchorFrames(anchor_type)
+	local scale = anchor:GetEffectiveScale() or 1
+	self.db[anchor_type].x["anchor_" .. anchor_type] = (anchor:GetLeft() or 0) * scale
+	self.db[anchor_type].y["anchor_" .. anchor_type] = (anchor:GetTop() or 0) * scale
+	-- save all unit positions so that they stay at the same place if the buttons are ungrouped
+	for unit, button in pairs(self.buttons) do
+		self.db[unit].x[unit] = (button:GetLeft() or 0) * scale
+		self.db[unit].y[unit] = (button:GetTop() or 0) * scale
+	end
+end
+
+function GladiusEx:CreateAnchor(anchor_type)
+	-- background
+	local background = CreateFrame("Frame", "GladiusExButtonBackground" .. anchor_type, anchor_type == "party" and self.party_parent or self.arena_parent)
+	background:SetBackdrop({ bgFile = [[Interface\Buttons\WHITE8X8]], tile = true, tileSize = 8 })
+	background:SetFrameStrata("BACKGROUND")
+
+	-- anchor
+	local anchor = CreateFrame("Frame", "GladiusExButtonAnchor" .. anchor_type, anchor_type == "party" and self.party_parent or self.arena_parent)
+	anchor:SetScript("OnMouseDown", function(f, button)
+		if button == "LeftButton" then
+			if IsShiftKeyDown() then
+				-- center horizontally
+				anchor:ClearAllPoints()
+				anchor:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, f:GetBottom())
+				self:SaveAnchorPosition(anchor_type)
+			elseif IsAltKeyDown() then
+				-- center vertically
+				anchor:ClearAllPoints()
+				anchor:SetPoint("LEFT", UIParent, "LEFT", f:GetLeft(), 0)
+				self:SaveAnchorPosition(anchor_type)
+			elseif IsControlKeyDown() then
+				local other_anchor = self:GetAnchorFrames(anchor_type == "party" and "arena" or "party")
+				if self.db[anchor_type].growDirection == "UP" or self.db[anchor_type].growDirection == "DOWN" or self.db[anchor_type].growDirection == "VCENTER" then
+					-- set same y as the other anchor
+					anchor:ClearAllPoints()
+					anchor:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", anchor:GetLeft(), other_anchor:GetTop())
+				else
+					-- set same x as the other anchor
+					anchor:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", other_anchor:GetLeft(), anchor:GetTop())
+				end
+				self:SaveAnchorPosition(anchor_type)
+			end
+		elseif button == "RightButton" then
+			self:ShowOptionsDialog()
+		end
+	end)
+
+	anchor:SetScript("OnDragStart", function(f)
+		if not InCombatLockdown() and not self.db.base.locked then
+			anchor:StartMoving()
+		end
+	end)
+
+	anchor:SetScript("OnDragStop", function(f)
+		anchor:StopMovingOrSizing()
+		self:SaveAnchorPosition(anchor_type)
+	end)
+
+	anchor.text = anchor:CreateFontString("GladiusExButtonAnchorText", "OVERLAY")
+	anchor.text2 = anchor:CreateFontString("GladiusExButtonAnchorText2", "OVERLAY")
+
+	background.background_type = anchor_type
+	anchor.anchor_type = anchor_type
+
+	anchor:Hide()
+	background:Hide()
+
+	return anchor, background
+end
+
+function GladiusEx:GetUnitIndex(unit)
+	local unit_index
+	if unit == "player" or unit == "playerpet" then
+		unit_index = 1
+	else
+		local utype, n = strmatch(unit, "^(%a+)(%d+)$")
+		if utype == "party" or utype == "partypet" then
+			unit_index = tonumber(n) + 1
+		elseif utype == "arena" or utype == "arenapet" then
+			unit_index = tonumber(n)
+		else
+			assert(false, "Unknown unit " .. tostring(unit))
+		end
+	end
+	return unit_index
+end
+
+function GladiusEx:GetUnitAnchorType(unit)
+	return self:IsArenaUnit(unit) and "arena" or "party"
+end
+
+function GladiusEx:GetUnitAnchor(unit)
+	return self:IsArenaUnit(unit) and self.arena_anchor or self.party_anchor
+end
+
+function GladiusEx:GetWidgetsBounds(unit)
+	local button = self.buttons[unit]
+
+	if button then
+		return button.wleft, button.wright, button.wtop, button.wbottom
+	end
+end
+
+function GladiusEx:UpdateUnitPosition(unit)
+	local button = self.buttons[unit]
+
+	local left, right, top, bottom = self:GetWidgetsBounds(unit)
+
+	button:ClearAllPoints()
+
+	if self.db[unit].groupButtons then
+		local unit_index = self:GetUnitIndex(unit) - 1
+		local num_frames = self.arena_size
+		local anchor = self:GetUnitAnchor(unit)
+		local frame_width = button.frame_width
+		local frame_height = button.frame_height
+		local real_width = frame_width + abs(left) + abs(right)
+		local real_height = frame_height + abs(top) + abs(bottom)
+		local margin_x = (real_width + self.db[unit].margin) * unit_index
+		local margin_y = (real_height + self.db[unit].margin) * unit_index
+
+		if self.db[unit].growDirection == "UP" then
+			button:SetPoint("BOTTOMLEFT", anchor, "TOPLEFT", abs(left), margin_y + abs(bottom))
+		elseif self.db[unit].growDirection == "DOWN" then
+			button:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", abs(left), -margin_y - abs(top))
+		elseif self.db[unit].growDirection == "VCENTER" then
+			local offset = (real_height * (num_frames - 1) + self.db[unit].margin * (num_frames - 1)) / 2
+			button:SetPoint("LEFT", anchor, "LEFT", abs(left), offset - margin_y + abs(bottom) / 2 - abs(top) / 2)
+		elseif self.db[unit].growDirection == "LEFT" then
+			button:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", -margin_x - abs(right), -abs(top))
+		elseif self.db[unit].growDirection == "RIGHT" then
+			button:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", margin_x + abs(left), -abs(top))
+		elseif self.db[unit].growDirection == "HCENTER" then
+			local offset = (real_width * (num_frames - 1) + self.db[unit].margin * (num_frames - 1) - abs(left) + abs(right)) / 2
+			button:SetPoint("TOP", anchor, "BOTTOM", -offset + margin_x, -abs(top))
+		end
+	else
+		local x, y = self.db[unit].x[unit], self.db[unit].y[unit]
+		if x and y then
+			local eff = button:GetEffectiveScale()
+			button:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db[unit].x[unit] / eff, self.db[unit].y[unit] / eff)
+		else
+			button:SetPoint("CENTER", UIParent, "CENTER")
+		end
+	end
+end
+
+function GladiusEx:GetBarWidth(unit)
+	return self:AdjustPositionOffset(self.buttons[unit], self.db[unit].barWidth)
+	-- return self.db[unit].barWidth
+end
+
+function GladiusEx:GetBarsHeight(unit)
+	return self:AdjustPositionOffset(self.buttons[unit], self.db[unit].barsHeight)
+	-- return self.db[unit].barsHeight
+end
+
+local perfect_scale
+function GladiusEx:GetPerfectScale()
+	if not perfect_scale then
+		perfect_scale = 768 / string.match(({GetScreenResolutions()})[GetCurrentResolution()], "%d+x(%d+)")
+	end
+	return perfect_scale
+end
+
+function GladiusEx:AdjustPixels(frame, size)
+	while not frame.GetEffectiveScale do frame = frame:GetParent() end
+	local frameScale = frame:GetEffectiveScale()
+	local perfectScale = self:GetPerfectScale()
+	local size_adjusted = size / (frameScale / perfectScale)
+	return size_adjusted
+end
+
+function GladiusEx:AdjustPositionOffset(frame, p, pos)
+	while not frame.GetEffectiveScale do frame = frame:GetParent() end
+	local frameScale = frame:GetEffectiveScale()
+	local perfectScale = self:GetPerfectScale()
+	local pp = p * frameScale / perfectScale
+	local pa = pos and (ceil(pp) - pp) or (pp - floor(pp))
+	if pa > 0.5 then pa = pa - 1 end
+	return p + pa * perfectScale / frameScale
+end
+
+function GladiusEx:AdjustFrameOffset(frame, relative_point)
+	local x, y
+	local ax, ay
+
+	if strfind(relative_point, "LEFT") then
+		x = frame:GetLeft() or 0
+		ax = self:AdjustPositionOffset(frame, x, true) - x
+	else
+		x = frame:GetRight() or 0
+		ax = x - self:AdjustPositionOffset(frame, x, false)
+	end
+	if strfind(relative_point, "TOP") then
+		y = frame:GetTop() or 0
+		ay = y - self:AdjustPositionOffset(frame, y, false)
+	else
+		y = frame:GetBottom() or 0
+		ay = self:AdjustPositionOffset(frame, y, true) - y
+	end
+
+	return ax, ay
+end
+
+function GladiusEx:UpdateUnit(unit)
+	if not self:IsHandledUnit(unit) then return end
+
+	log("UpdateUnit", unit)
+
+	if InCombatLockdown() then
+		self:QueueUpdate()
+		return
+	end
+
+	-- create
+	if not self.buttons[unit] then
+		self:CreateUnit(unit)
+	end
+
+	local button = self.buttons[unit]
+	local backdrop_color = self.db[unit].backdropColor
+	button:SetBackdrop({ bgFile = [[Interface\Buttons\WHITE8X8]], tile = true, tileSize = 16 })
+	button:SetBackdropColor(backdrop_color.r, backdrop_color.g, backdrop_color.b, backdrop_color.a)
+
+	-- the frame needs to be anchored somewhere to be able to compute positions
+	button:ClearAllPoints()
+	button:SetPoint("CENTER", UIParent, "CENTER")
+
+	local bars_width = self:GetBarWidth(unit)
+	local bars_height = self:GetBarsHeight(unit)
+	local border_size = self:AdjustPixels(button, self.db[unit].borderSize)
+	local mod_margin = self:AdjustPixels(button, self.db[unit].modMargin)
+
+	-- update mods
+	local mods = fn.filter(fn.from_iterator(function(n, m) return m end, self:IterateModules()), function(m) return self:IsModuleEnabled(unit, m:GetName()) end)
+	local bar_mods = fn.sort(fn.filter(mods, function(m) return m:GetAttachType(unit) == "Bar" end), function(a, b) return a:GetBarOrder(unit) < b:GetBarOrder(unit) end)
+	-- get and sort in-frame top to bottom
+	local point_order = {
+		["TOP"] = 1,
+		["LEFT"] = 2,
+		["RIGHT"] = 3,
+		["BOTTOM"] = 4,
+	}
+	local inframe_mods = fn.sort(fn.filter(mods, function(m) return m:GetAttachType(unit) == "InFrame" end), function(a, b) return point_order[a:GetAttachPoint(unit)] < point_order[b:GetAttachPoint(unit)] end)
+	local widget_mods = fn.filter(mods, function(m) return m:GetAttachType(unit) == "Widget" end)
+
+	-- calculate inframe mods size
+	local left, right, top, bottom = 0, 0, 0, 0
+	local h_count, v_count = 0, 0
+	fn.each(inframe_mods, function(m)
+		local point = m:GetAttachPoint(unit)
+		local size = m:GetAttachSize(unit)
+		if point == "LEFT" then
+			left = left + size
+			h_count = h_count + 1
+		elseif point == "RIGHT" then
+			right = right + size
+			h_count = h_count + 1
+		elseif point == "TOP" then
+			top = top + size
+			v_count = v_count + 1
+		elseif point == "BOTTOM" then
+			bottom = bottom + size
+			v_count = v_count + 1
+		end
+	end)
+
+	-- update button size
+	local frame_width = bars_width + left + right + border_size * 2 + h_count * mod_margin
+	local frame_height = bars_height + top + bottom + border_size * 2 + v_count * mod_margin
+	button.frame_width = frame_width
+	button.frame_height = frame_height
+	button:SetScale(self.db[unit].frameScale)
+	button:SetSize(frame_width, frame_height)
+
+	-- update inframe mods
+	fn.each(inframe_mods, function(m)
+		local point = m:GetAttachPoint(unit)
+		local size = m:GetAttachSize(unit)
+		m:Update(unit)
+		local mf = m.frame[unit]
+		mf:ClearAllPoints()
+		if point == "LEFT" then
+			mf:SetPoint("TOPLEFT", border_size, -top - border_size - (top > 0 and mod_margin or 0))
+			mf:SetSize(size, bars_height)
+		elseif point == "RIGHT" then
+			mf:SetPoint("TOPRIGHT", -border_size, -top - border_size - (top > 0 and mod_margin or 0))
+			mf:SetSize(size, bars_height)
+		elseif point == "TOP" then
+			mf:SetPoint("TOPLEFT", border_size, -border_size)
+			mf:SetPoint("TOPRIGHT", -border_size, border_size)
+			mf:SetHeight(size)
+		elseif point == "BOTTOM" then
+			mf:SetPoint("BOTTOMLEFT", border_size, border_size)
+			mf:SetPoint("BOTTOMRIGHT", -border_size, border_size)
+			mf:SetHeight(size)
+		end
+	end)
+
+	-- update bars
+	local bar_height_diff = fn.reduce(bar_mods, function(r, m) return r + m:GetBarHeight(unit) end, 0)
+	local std_bar_height = (bars_height - bar_height_diff - mod_margin * (#bar_mods - 1)) / #bar_mods
+	local bar_y = -top - border_size - (top > 0 and mod_margin or 0)
+	local bar_x = left + border_size + (left > 0 and mod_margin or 0)
+	fn.each(bar_mods, function(m)
+		m:Update(unit)
+		local mf = m.frame[unit]
+		local bar_height = std_bar_height + m:GetBarHeight(unit)
+		mf:ClearAllPoints()
+		mf:SetPoint("TOPLEFT", button, "TOPLEFT", bar_x, bar_y)
+		mf:SetSize(bars_width, bar_height)
+		bar_y = bar_y - bar_height - mod_margin
+	end)
+
+	-- update widgets
+	local wleft, wright, wtop, wbottom = 0, 0, 0, 0
+	fn.each(widget_mods, function(m)
+		if m.Update then m:Update(unit) end
+		-- calculate widget bounds
+		local mframes = m:GetFrames(unit)
+		if mframes then
+			fn.each(mframes, function(mf)
+				if mf then
+					local mscale = mf:GetScale()
+					local mleft = (button:GetLeft() or 0) - (mf:GetLeft() or 0) * mscale
+					local mright = (mf:GetRight() or 0) * mscale - (button:GetRight() or 0)
+					local mtop = (mf:GetTop() or 0) * mscale - (button:GetTop() or 0)
+					local mbottom = (button:GetBottom() or 0) - (mf:GetBottom() or 0) * mscale
+					wleft = max(mleft, wleft)
+					wright = max(mright, wright)
+					wtop = max(mtop, wtop)
+					wbottom = max(mbottom, wbottom)
+				end
+			end)
+		end
+	end)
+
+	button.wleft = wleft
+	button.wright = wright
+	button.wtop = wtop
+	button.wbottom = wbottom
+
+	-- update position
+	self:UpdateUnitPosition(unit)
+
+	-- show the secure frame
+	if self:IsTesting() and not self.db.base.locked then
+		button.secure:Hide()
+	else
+		button.secure:Show()
+	end
+
+	button:SetFrameStrata("LOW")
+	button.secure:SetFrameStrata("MEDIUM")
+end
+
+function GladiusEx:GetAnchorFrames(anchor_type)
+	local anchor = anchor_type == "party" and self.party_anchor or self.arena_anchor
+	local background = anchor_type == "party" and self.party_background or self.arena_background
+	return anchor, background
+end
+
+function GladiusEx:UpdateAnchor(anchor_type)
+	local anchor, background = self:GetAnchorFrames(anchor_type)
+
+	-- anchor
+	anchor:ClearAllPoints()
+	anchor:SetSize(anchor_width, anchor_height)
+	anchor:SetScale(self.db[anchor_type].frameScale)
+	if (not self.db[anchor_type].x and not self.db[anchor_type].y) or (not self.db[anchor_type].x["anchor_" .. anchor.anchor_type] and not self.db[anchor_type].y["anchor_" .. anchor.anchor_type]) then
+		if anchor.anchor_type == "party" then
+			anchor:SetPoint("CENTER", UIParent, "CENTER", -300, 0)
+		else
+			anchor:SetPoint("CENTER", UIParent, "CENTER", 300, 0)
+		end
+	else
+		local eff = anchor:GetEffectiveScale()
+		anchor:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db[anchor_type].x["anchor_" .. anchor.anchor_type] / eff, self.db[anchor_type].y["anchor_" .. anchor.anchor_type] / eff)
+	end
+
+	anchor:SetBackdrop({
+		edgeFile = [[Interface\Buttons\WHITE8X8]], edgeSize = self:AdjustPixels(anchor, max(1, floor(self.db[anchor_type].frameScale + 0.5))),
+		bgFile = [[Interface\Buttons\WHITE8X8]], tile = true, tileSize = 8,
+	})
+	anchor:SetBackdropColor(0, 0, 0, 1)
+	anchor:SetBackdropBorderColor(1, 1, 1, 1)
+	anchor:SetFrameLevel(200)
+	anchor:SetFrameStrata("MEDIUM")
+
+	anchor:SetClampedToScreen(true)
+	anchor:EnableMouse(true)
+	anchor:SetMovable(true)
+	anchor:RegisterForDrag("LeftButton")
+
+	-- anchor texts
+	anchor.text:SetPoint("TOP", anchor, "TOP", 0, -7)
+	anchor.text:SetFont(LSM:Fetch(LSM.MediaType.FONT, self.db.base.globalFont), 11, self.db.base.globalFontOutline)
+	anchor.text:SetTextColor(1, 1, 1, 1)
+	anchor.text:SetShadowOffset(1, -1)
+	anchor.text:SetShadowColor(0, 0, 0, 1)
+	anchor.text:SetText(anchor.anchor_type == "party" and L["GladiusEx Party Anchor - click to move"] or L["GladiusEx Enemy Anchor - click to move"])
+
+	anchor.text2:SetPoint("BOTTOM", anchor, "BOTTOM", 0, 7)
+	anchor.text2:SetFont(LSM:Fetch(LSM.MediaType.FONT, self.db.base.globalFont), 11, self.db.base.globalFontOutline)
+	anchor.text2:SetTextColor(1, 1, 1, 1)
+	anchor.text2:SetShadowOffset(1, -1)
+	anchor.text2:SetShadowColor(0, 0, 0, 1)
+	anchor.text2:SetText(L["Lock the frames to hide"])
+
+	if self.db[anchor_type].groupButtons and not self.db.base.locked then
+		anchor:Show()
+	else
+		anchor:Hide()
+	end
+end
+
+function GladiusEx:UpdateBackground(anchor_type)
+	local anchor, background = self:GetAnchorFrames(anchor_type)
+
+	-- background
+	local unit = background.background_type == "party" and "player" or "arena1"
+	local left, right, top, bottom = self:GetWidgetsBounds(unit)
+	local frame_width = self.buttons[unit].frame_width
+	local frame_height = self.buttons[unit].frame_height
+
+	local num_frames = self.arena_size
+	local width, height = self.db[anchor_type].backgroundPadding * 2, self.db[anchor_type].backgroundPadding * 2
+	local real_frame_width = frame_width + abs(right) + abs(left)
+	local real_frame_height = frame_height + abs(top) + abs(bottom)
+	if self.db[anchor_type].growDirection == "UP" or self.db[anchor_type].growDirection == "DOWN" or self.db[anchor_type].growDirection == "VCENTER" then
+		width = width + real_frame_width
+		height = height + real_frame_height * num_frames + self.db[anchor_type].margin * (num_frames - 1)
+	else
+		width = width + real_frame_width * num_frames + self.db[anchor_type].margin * (num_frames - 1)
+		height = height + real_frame_height
+	end
+
+	background:ClearAllPoints()
+	background:SetSize(width, height)
+	background:SetScale(self.db[anchor_type].frameScale)
+
+	if self.db[anchor_type].growDirection == "UP" then
+		background:SetPoint("BOTTOMLEFT", anchor, "TOPLEFT", -self.db[anchor_type].backgroundPadding, -self.db[anchor_type].backgroundPadding)
+	elseif self.db[anchor_type].growDirection == "DOWN" then
+		background:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -self.db[anchor_type].backgroundPadding, self.db[anchor_type].backgroundPadding)
+	elseif self.db[anchor_type].growDirection == "VCENTER" then
+		background:SetPoint("LEFT", anchor, "LEFT", -self.db[anchor_type].backgroundPadding, 0)
+	elseif self.db[anchor_type].growDirection == "LEFT" then
+		background:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", self.db[anchor_type].backgroundPadding, self.db[anchor_type].backgroundPadding)
+	elseif self.db[anchor_type].growDirection == "RIGHT" then
+		background:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -self.db[anchor_type].backgroundPadding, self.db[anchor_type].backgroundPadding)
+	elseif self.db[anchor_type].growDirection == "HCENTER" then
+		background:SetPoint("TOP", anchor, "BOTTOM", 0, self.db[anchor_type].backgroundPadding)
+	end
+
+	background:SetBackdropColor(self.db[anchor_type].backgroundColor.r, self.db[anchor_type].backgroundColor.g, self.db[anchor_type].backgroundColor.b, self.db[anchor_type].backgroundColor.a)
+
+	if self.db[anchor_type].groupButtons then
+		background:Show()
+	else
+		background:Hide()
+	end
+end
+
+-- FontStrings with OUTLINE look blurry, so instead we do our own for the
+-- cheap, cheap cost of only 9 times more FontStrings.
+-- This returns a FontString-like object that renders the outlines
+-- by creating several more FontStrings around the around the one.
+function GladiusEx:CreateSuperFS(fsparent, layer)
+	if not self.db.base.superFS then
+		return fsparent:CreateFontString(nil, layer)
+	end
+
+	local superfs = {}
+
+	function superfs:ApplyAll(func, ...)
+		for i = 1, #self.fs do
+			self.fs[i][func](self.fs[i], ...)
+		end
+	end
+
+	local function AddWrapperAll(func)
+		superfs[func] = fn.bind_nth(superfs.ApplyAll, 2, func)
+	end
+
+	local function AddWrapperOne(func)
+		superfs[func] = function(self, ...)
+			return self.fs[1][func](self.fs[1], ...)
+		end
+	end
+
+	AddWrapperAll("ClearAllPoints")
+	AddWrapperAll("Hide")
+	AddWrapperAll("SetFormattedText")
+	AddWrapperAll("SetJustifyH")
+	AddWrapperAll("SetJustifyV")
+	AddWrapperAll("SetShadowColor")
+	AddWrapperAll("SetShadowOffset")
+	AddWrapperAll("SetAlpha")
+	AddWrapperAll("SetText")
+	AddWrapperAll("SetTextColor")
+	AddWrapperAll("Show")
+	AddWrapperOne("GetFont")
+
+	superfs.fs = {}
+
+	function superfs:SetPoint(point, parent, relative, offsetx, offsety)
+		self.fs[1]:SetPoint(point, parent, relative, offsetx or 0, offsety or 0)
+		self:UpdatePoints(point, parent, relative, offsetx or 0, offsety or 0)
+	end
+
+	function superfs:SetFont(font, size, flags)
+		local i = 1
+		local w = (flags == "OUTLINE" and 1) or (flags == "THICKOUTLINE" and 2) or 0
+		local count = ((w * 2) + 1) ^ 2
+
+		-- create first one last so that it is the last one rendered
+		for i = count, 1, -1 do
+			if not self.fs[i] then
+				self.fs[i] = fsparent:CreateFontString(nil, layer)
+			end
+			self.fs[i]:SetFont(font, size)
+			self.fs[i]:Show()
+			i = i + 1
+		end
+
+		for i = count + 1, #self.fs do
+			self.fs[i]:Hide()
+		end
+
+		self.w = w
+		self.count = count
+	end
+
+	function superfs:UpdatePoints(point, parent, relative, offsetx, offsety)
+		local i = 2
+		local w = self.w
+		local wp = GladiusEx:AdjustPixels(parent, 1)
+		local wp_x = wp
+		local wp_y = wp
+		for x = -w, w do
+			for y = -w, w do
+				if not (x == 0 and y == 0) then
+					self.fs[i]:SetPoint(point, parent, relative, offsetx + wp_x * x, offsety + wp_y * y)
+					self.fs[i]:SetTextColor(0, 0, 0, 1)
+					i = i + 1
+				end
+			end
+		end
+	end
+
+	return superfs
+end
+
+-- Returns the spellid if the spell doesn't exist, so that it doesn't break tables
+function GladiusEx:SafeGetSpellName(spellid)
+	local name = GetSpellInfo(spellid)
+	if not name then
+		geterrorhandler()("GladiusEx: invalid spellid " .. tostring(spellid))
+		return tostring(spellid)
+	end
+	return name
+end

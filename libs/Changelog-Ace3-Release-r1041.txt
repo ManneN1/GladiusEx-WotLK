@@ -1,0 +1,31 @@
+------------------------------------------------------------------------
+r1043 | nevcairiel | 2011-11-29 16:38:43 +0000 (Tue, 29 Nov 2011) | 1 line
+Changed paths:
+   A /tags/Release-r1041 (from /trunk:1042)
+
+Tag Release-r1041 for WoW 4.3
+------------------------------------------------------------------------
+r1042 | nevcairiel | 2011-11-29 16:36:50 +0000 (Tue, 29 Nov 2011) | 1 line
+Changed paths:
+   M /trunk/changelog.txt
+
+Update changelog
+------------------------------------------------------------------------
+r1041 | nevcairiel | 2011-11-29 16:24:56 +0000 (Tue, 29 Nov 2011) | 1 line
+Changed paths:
+   M /trunk/AceGUI-3.0/widgets/AceGUIContainer-Frame.lua
+
+AceGUI-3.0: Frame: Add :EnableResize (Ticket #214)
+------------------------------------------------------------------------
+r1040 | nevcairiel | 2011-11-29 16:20:28 +0000 (Tue, 29 Nov 2011) | 1 line
+Changed paths:
+   M /trunk/Ace3.toc
+
+Bump .toc for 4.3
+------------------------------------------------------------------------
+r1039 | mikk | 2011-10-03 01:42:11 +0000 (Mon, 03 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/tests/AceSerializer-3.0.lua
+
+Tests for AceSerializer-3.0 r4 (no more NaN support)
+------------------------------------------------------------------------

@@ -1,0 +1,12 @@
+tag v2.7
+e75daae598a08888f3945d2238be76854eafd1f0
+Adirelle <adirelle@tagada-team.net>
+2012-04-14 18:54:56 +0200
+
+Tagging as v2.7.
+
+
+--------------------
+
+Adirelle:
+	- Updated for 4.3 DR according to http://www.wowhead.com/forums&topic=190141/4-3-crowd-controls-dispels-pvp-de-buffs.

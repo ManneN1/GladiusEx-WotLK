@@ -1,0 +1,6 @@
+LibDispellable-1.0 aims at helping to test if the player can really dispel an enemy buff or a friend debuff.
+
+The current Blizzard implementation of cureable buff filter ("HARMFUL RAID") does not take talents into account. There is no way to test for buffs the player can dispel on her enemies. LibDispellable-1.0 provides methods to test both defensive, taking care of healer talents for Magic dispel, and offensive dispel, using a comprehensive list of enrage effects.
+
+See the "API page on wowace.com":http://www.wowace.com/addons/libdispellable-1-0/pages/api/ for usage.
+

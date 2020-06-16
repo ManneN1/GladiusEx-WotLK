@@ -1,0 +1,67 @@
+------------------------------------------------------------------------
+r112 | mitch0 | 2010-10-16 22:49:00 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+DK spells
+------------------------------------------------------------------------
+r111 | mitch0 | 2010-10-16 22:05:28 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+warrior spells
+------------------------------------------------------------------------
+r110 | mitch0 | 2010-10-16 21:49:14 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+warlock spells
+------------------------------------------------------------------------
+r109 | mitch0 | 2010-10-16 21:25:24 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+shaman spells
+------------------------------------------------------------------------
+r108 | mitch0 | 2010-10-16 21:05:42 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+rogue spells, pick pocket and ambush are commented out, must check if they work always or only while stealthed
+------------------------------------------------------------------------
+r107 | mitch0 | 2010-10-16 20:45:21 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+priest spells
+------------------------------------------------------------------------
+r106 | mitch0 | 2010-10-16 20:22:46 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+paladin spells
+------------------------------------------------------------------------
+r105 | mitch0 | 2010-10-16 19:19:40 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+mage spells
+------------------------------------------------------------------------
+r104 | mitch0 | 2010-10-16 18:45:50 +0000 (Sat, 16 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+hunter spells cleanup
+------------------------------------------------------------------------
+r103 | mitch0 | 2010-10-14 09:24:46 +0000 (Thu, 14 Oct 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+druid spells updated
+------------------------------------------------------------------------
+r102 | mitch0 | 2010-09-03 14:47:24 +0000 (Fri, 03 Sep 2010) | 1 line
+Changed paths:
+   M /trunk/LibRangeCheck-2.0/LibRangeCheck-2.0.lua
+
+use GetSpellBookItemName instead of GetSpellName if that's not available (cata fix)
+------------------------------------------------------------------------

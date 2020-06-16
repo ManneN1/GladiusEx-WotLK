@@ -1,0 +1,28 @@
+tag 1.0
+672807b247d3c9a3cdfb4131074d2306dfb19c98
+Adirelle <adirelle@tagada-team.net>
+2011-05-03 21:25:05 +0200
+
+Tagging as 1.0.
+
+
+--------------------
+
+Adirelle:
+	- TOC bump.
+	- Added a method to test enrage by spell IDs: lib:IsEnrageEffect(spellID).
+	- Have the iterators returns the additional Unit(De)Buff return values.
+	- Added a parameter to CanDispell to properly handle offensive/defensive dispel tests.
+	- Removed left-over code.
+	- Added a README file.
+	- Use a datamined, comprehensive list of enrage spell IDs instead of names.
+	- Properly iterate over enrage effects.
+	- Doc typo.
+	- Doc updated.
+	- Minor bump.
+	- Fixed iterators.
+	- Typo.
+	- Fixed the .docmeta file.
+	- Added support for rage effects.
+	- Developper version should always be used.
+	- First version.
