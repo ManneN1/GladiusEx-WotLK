@@ -1,6 +1,6 @@
-# GladiusEx - Cataclysm
+# GladiusEx - WotLK
 
-The famous (and imo, far superior) arena frame AddOn GladiusEx - now for Cataclysm!
+The famous (and imo, far superior) arena frame AddOn GladiusEx - now for WotLK!
 
 ## Installing
 
