@@ -8,7 +8,7 @@ The folder "GladiusExBackport-Cata-master must be renamed to "GladiusEx" and pla
 
 ### Note
 
-The "Incoming" Absorb/Heal portion of the healthbar module has been removed as the underlying API is bugged (heals) / non-existant (absorbs) in Cataclysm.
+The "Incoming" Absorb/Heal portion of the healthbar module has been removed as the underlying API is non-existant in WotLK.
 
 Furthermore, the cooldowns module has been permanently removed (until someone backports LibCooldownTracker to 4.3.4).
 
