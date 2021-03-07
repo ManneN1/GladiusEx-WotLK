@@ -4,7 +4,7 @@ The famous (and imo, far superior) arena frame AddOn GladiusEx - now for WotLK!
 
 ## Installing
 
-The folder "GladiusExBackport-Cata-master must be renamed to "GladiusEx" and placed in /Interface/AddOns (relative the WoW root folder).
+The folder "GladiusExBackport-WotLK-master must be renamed to "GladiusEx" and placed in /Interface/AddOns (relative the WoW root folder).
 
 ### Note
 
