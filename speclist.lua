@@ -28,6 +28,7 @@ function GladiusEx:GetSpecList()
 		[GladiusEx:SafeGetSpellName(16511)]	= "Subtlety",		   -- Hemorrhage
 		[GladiusEx:SafeGetSpellName(36554)]	= "Subtlety",		   -- Shadowstep
 		[GladiusEx:SafeGetSpellName(31223)]	= "Subtlety",		   -- Master of Subtlety
+		[GladiusEx:SafeGetSpellName(51713)]	= "Subtlety",		   -- Shadow Dance
 		-- PRIEST
 		[GladiusEx:SafeGetSpellName(47540)]	= "Discipline",		-- Penance
 		[GladiusEx:SafeGetSpellName(10060)]	= "Discipline",		-- Power Infusion

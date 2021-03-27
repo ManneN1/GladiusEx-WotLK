@@ -219,7 +219,7 @@ function DRTracker:SortIcons(unit)
 	end
 end
 
-function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName, cFlags, dGUID, dName, dFlags, spellID, spellName, spellSchool, auraType)
+function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName, cFlags, destGUID, dName, dFlags, spellID, spellName, spellSchool, auraType)
 	-- Enemy had a debuff refreshed before it faded
 	-- Buff or debuff faded from an enemy
 	if eventType == "SPELL_AURA_REFRESH" or eventType == "SPELL_AURA_REMOVED" then
