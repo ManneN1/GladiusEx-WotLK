@@ -142,7 +142,6 @@ end
 -- Sends an announcement
 -- Param unit is only used for class coloring of messages
 function Announcements:Send(msg, throttle, unit)
-	print("Trying to send something")
 	-- only send announcements inside arenas
 	if select(2, IsInInstance()) ~= "arena" then return end
 
@@ -163,7 +162,6 @@ function Announcements:Send(msg, throttle, unit)
 
 	local color = unit and RAID_CLASS_COLORS[UnitClass(unit)] or { r = 0, g = 1, b = 0 }
 	local dest = self.db[unit].dest
-	print("Trying to send something - halfway")
 	if dest == "self" then
 		GladiusEx:Print(msg)
 	end
