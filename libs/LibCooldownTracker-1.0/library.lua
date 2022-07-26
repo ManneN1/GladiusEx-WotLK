@@ -216,9 +216,6 @@ local function CooldownEvent(event, unit, spellid)
 		else
 			tpu[spellid] = {
 				detected = true,
-				charges = spelldata.charges or spelldata.opt_charges,
-				max_charges = spelldata.charges or spelldata.opt_charges,
-				charges_detected = spelldata.charges and true or false,
 				[event] = now,
 			}
 		end
@@ -306,7 +303,7 @@ local function CooldownEvent(event, unit, spellid)
 				if spelldata.sets_cooldown then
 					local cspellid = spelldata.sets_cooldown.spellid
 					local cspelldata = SpellData[cspellid]
-					if (tpu[cspellid] and tpu[cspellid].detected) or (not cspelldata.talent and not cspelldata.glyph) then
+					if (tpu[cspellid] and tpu[cspellid].detected) or (cspelldata ~= nil and not cspelldata.talent and not cspelldata.glyph) then
 						if not tpu[cspellid] then
 							tpu[cspellid] = {}
 						end
