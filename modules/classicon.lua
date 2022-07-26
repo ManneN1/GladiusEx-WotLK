@@ -10,13 +10,46 @@ local GetTime, SetPortraitTexture = GetTime, SetPortraitTexture
 local GetSpellInfo, UnitAura, UnitClass, UnitGUID, UnitBuff, UnitDebuff = GetSpellInfo, UnitAura, UnitClass, UnitGUID, UnitBuff, UnitDebuff
 local UnitIsVisible, UnitIsConnected, GetSpecializationInfoByID, GetTexCoordsForRole = UnitIsVisible, UnitIsConnected, GetSpecializationInfoByID, GetTexCoordsForRole
 
+local SPECIALIZATION_ICONS = {
+    [250] = "Interface\\Icons\\Spell_Deathknight_BloodPresence",
+    [251] = "Interface\\Icons\\Spell_Deathknight_FrostPresence",
+    [252] = "Interface\\Icons\\Spell_Deathknight_UnholyPresence",
+    [102] = "Interface\\Icons\\Spell_Nature_StarFall",
+    [103] = "Interface\\Icons\\Ability_Druid_CatForm",
+    [105] = "Interface\\Icons\\Spell_Nature_HealingTouch",
+    [253] = "Interface\\Icons\\Ability_Hunter_BeastTaming",
+    [254] = "Interface\\Icons\\Ability_Marksmanship",
+    [255] = "Interface\\Icons\\Ability_Hunter_SwiftStrike",
+    [62]  = "Interface\\Icons\\Spell_Holy_MagicalSentry",
+    [63]  = "Interface\\Icons\\Spell_Fire_FlameBolt",
+    [64]  = "Interface\\Icons\\Spell_Frost_FrostBolt02",
+    [65]  = "Interface\\Icons\\Spell_Holy_HolyBolt",
+    [66]  = "Interface\\Icons\\Spell_Holy_DevotionAura",
+    [70]  = "Interface\\Icons\\Spell_Holy_AuraOfLight",
+    [256] = "Interface\\Icons\\Spell_Holy_WordFortitude",
+    [257] = "Interface\\Icons\\Spell_Holy_GuardianSpirit",
+    [258] = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
+    [259] = "Interface\\Icons\\Ability_Rogue_ShadowStrikes",
+    [260] = "Interface\\Icons\\Ability_BackStab",
+    [261] = "Interface\\Icons\\Ability_Stealth",
+    [262] = "Interface\\Icons\\Spell_Nature_Lightning",
+    [263] = "Interface\\Icons\\Spell_Nature_LightningShield",
+    [264] = "Interface\\Icons\\Spell_Nature_MagicImmunity",
+    [265] = "Interface\\Icons\\Spell_Shadow_DeathCoil",
+    [266] = "Interface\\Icons\\Spell_Shadow_Metamorphosis",
+    [267] = "Interface\\Icons\\Spell_Shadow_RainOfFire",
+    [71]  = "Interface\\Icons\\Ability_Warrior_DefensiveStance",
+    [72]  = "Interface\\Icons\\Ability_Warrior_Bladestorm",
+    [73]  = "Interface\\Icons\\Ability_Warrior_InnerRage",
+}
+
 -- NOTE: this list can be modified from the ClassIcon module options, no need to edit it here
 -- Nonetheless, if you think that we missed an important aura, please post it on the addon site at curse or wowace
 local function GetDefaultImportantAuras()
 	return {
 		-- Spell Name                           = Priority (higher = more priority)
         [GladiusEx:SafeGetSpellName(20549)] = 9, -- War Stomp
-        [GladiusEx:SafeGetSpellName(56)] = 9, -- Stun
+        [GladiusEx:SafeGetSpellName(56)] = 9,   -- Stun
         [GladiusEx:SafeGetSpellName(13327)] = 9, -- Reckless Charge
         [GladiusEx:SafeGetSpellName(30216)] = 9, -- Fel Iron Bomb
         [GladiusEx:SafeGetSpellName(67769)] = 9, -- Cobalt Frag Bomb
@@ -183,7 +216,7 @@ function ClassIcon:OnEnable()
 	self:RegisterEvent("UNIT_AURA")
 	self:RegisterEvent("UNIT_PORTRAIT_UPDATE", "UNIT_AURA")
 	self:RegisterEvent("UNIT_MODEL_CHANGED")
-	self:RegisterMessage("GLADIUSEX_SPEC_UPDATE", "UNIT_AURA")
+	self:RegisterMessage("GLADIUSEX_SPEC_UPDATE", "SetClassIcon")
     self:RegisterMessage("GLADIUSEX_INTERRUPT", "UNIT_AURA")
 
 	if not self.frame then
@@ -304,7 +337,7 @@ function ClassIcon:UpdateAura(unit)
 	if name then
 		self:SetAura(unit, name, icon, duration, expires)
 	else
-		self:SetClassIcon(unit)
+		self:SetClassIcon(nil, unit)
 	end
 end
 
@@ -363,7 +396,7 @@ function ClassIcon:SetTexture(unit, texture, needs_crop, left, right, top, botto
 	end
 end
 
-function ClassIcon:SetClassIcon(unit)
+function ClassIcon:SetClassIcon(_, unit)
 	if not self.frame[unit] then return end
 
 	-- hide cooldown frame
@@ -438,15 +471,11 @@ function ClassIcon:SetClassIcon(unit)
 		texture = [[Interface\Icons\INV_Misc_QuestionMark]]
 		left, right, top, bottom = 0, 1, 0, 1
 		needs_crop = true
-	--elseif self.db[unit].classIconMode == "ROLE" and specID then
-	--	local _, _, _, _, _, role = GetSpecializationInfoByID(specID)
-	--	texture = [[Interface\LFGFrame\UI-LFG-ICON-ROLES]]
-	--	left, right, top, bottom = GetTexCoordsForRole(role)
-	--	needs_crop = false
-	--elseif self.db[unit].classIconMode == "SPEC" and specID then
-	--	texture = select(4, GetSpecializationInfoByID(specID))
-	--	left, right, top, bottom = 0, 1, 0, 1
-	--	needs_crop = true
+	elseif self.db[unit].classIconMode == "SPEC" and specID then
+		texture = SPECIALIZATION_ICONS[specID]
+        
+		left, right, top, bottom = 0, 1, 0, 1
+		needs_crop = true
 	else
         texture = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes"
 		left, right, top, bottom = unpack(CLASS_BUTTONS[class])
@@ -499,7 +528,7 @@ function ClassIcon:Update(unit)
 end
 
 function ClassIcon:Refresh(unit)
-	self:SetClassIcon(unit)
+	self:SetClassIcon(nil, unit)
 	self:UpdateAura(unit)
 end
 
@@ -508,7 +537,7 @@ function ClassIcon:Show(unit)
 	self.frame[unit]:Show()
 
 	-- set class icon
-	self:SetClassIcon(unit)
+	self:SetClassIcon(nil, unit)
 	self:UpdateAura(unit)
 end
 
@@ -552,6 +581,7 @@ function ClassIcon:GetOptions(unit)
 							name = L["Show"],
 							values = {
 								["CLASS"] = L["Class"],
+                                ["SPEC"] = L["Spec"],
 								["PORTRAIT2D"] = L["Portrait 2D"],
 								["PORTRAIT3D"] = L["Portrait 3D"],
 							},
