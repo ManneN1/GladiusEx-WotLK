@@ -92,7 +92,8 @@ local function GetDefaultImportantAuras()
         [GladiusEx:SafeGetSpellName(19503)] = 9, -- Scatter Shot
         [GladiusEx:SafeGetSpellName(1513)] = 9, -- Scare Beast
         [GladiusEx:SafeGetSpellName(24394)] = 9, -- Intimidation
-        [GladiusEx:SafeGetSpellName(3355)] = 9, -- Freezing Trap Effect
+        [GladiusEx:SafeGetSpellName(14309)] = 9,  -- Freezing Trap
+        [GladiusEx:SafeGetSpellName(60210)] = 9, -- Freezing Arrow Effect
         [GladiusEx:SafeGetSpellName(9005)] = 9, -- Pounce
         [GladiusEx:SafeGetSpellName(22570)] = 9, -- Maim
         [GladiusEx:SafeGetSpellName(2637)] = 9, -- Hibernate
