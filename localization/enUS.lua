@@ -96,7 +96,7 @@ L["PowerBar"] = "Power Bar"
 L["TargetBar"] = "Target"
 L["PetBar"] = "Pet"
 L["SkillHistory"] = "Skill History"
-L["Interrupts"] = true
+L["InterruptsEx"] = "Interrupts"
 
 L["The Arena battle has begun!"] = "The Arena battle has begun!"
 L["Show arena frames"] = true
