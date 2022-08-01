@@ -12,7 +12,7 @@ local defaults = {
 	interruptPrio = 3.0,
 }
 
-local Interrupt = GladiusEx:NewGladiusExModule("Interrupts", defaults, defaults)
+local Interrupt = GladiusEx:NewGladiusExModule("InterruptsEx", defaults, defaults)
 	
 INTERRUPTS = {
 	["Pummel"] = {duration=4},    				-- [Warrior] Pummel
