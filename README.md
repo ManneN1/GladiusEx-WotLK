@@ -2,13 +2,11 @@
 
 The famous (and imo, far superior) arena frame AddOn GladiusEx - now for WotLK 3.3.5!
 
-Note: This AddOn is NOT for WotLK Classic, it is for the original 3.3.5 client! 
+**The AddOn will not work on Classic WotLK, it will only work on the original WotLK client.**
 
 ## Installing
 
 The folder "GladiusEx-WotLK-master must be renamed to "GladiusEx" and placed in /Interface/AddOns (relative the WoW root folder).
-
-**The AddOn will not work on Classic WotLK, it will only work on the original WotLK client.**
 
 ### Note
 
