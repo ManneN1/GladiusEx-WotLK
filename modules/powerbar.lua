@@ -28,7 +28,11 @@ function PowerBar:OnEnable()
 	self:RegisterEvent("UNIT_MAXENERGY", "UpdatePowerEvent")
 	self:RegisterEvent("UNIT_MAXRAGE", "UpdatePowerEvent")
 	self:RegisterEvent("UNIT_MAXRUNIC_POWER", "UpdatePowerEvent")
-	self:RegisterEvent("UNIT_CLASSIFICATION_CHANGED","UpdateColorEvent")
+    self:RegisterEvent("UNIT_MANA", "UpdatePowerEvent")
+	self:RegisterEvent("UNIT_ENERGY", "UpdatePowerEvent")
+    self:RegisterEvent("UNIT_RAGE", "UpdatePowerEvent")
+    self:RegisterEvent("UNIT_RUNIC_POWER", "UpdatePowerEvent")
+    self:RegisterEvent("UNIT_CLASSIFICATION_CHANGED","UpdateColorEvent")
 	self:RegisterEvent("UNIT_DISPLAYPOWER", "UpdateColorEvent")
 
 	if not self.frame then
