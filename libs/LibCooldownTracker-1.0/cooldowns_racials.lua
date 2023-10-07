@@ -1,32 +1,41 @@
 -- Racials
--- Every Man for Himself (Human)
-LCT_SpellData[59752] = 42292
 -- Gift of the Naaru (Draenei)
-LCT_SpellData[59544] = {
+LCT_SpellData[28880] = {
 	race = "Draenei",
 	heal = true,
 	duration = 5,
 	cooldown = 180,
 }
-LCT_SpellData[28880] = 59544
-LCT_SpellData[59542] = 59544
-LCT_SpellData[59543] = 59544
-LCT_SpellData[59545] = 59544
-LCT_SpellData[59547] = 59544
-LCT_SpellData[59548] = 59544
-LCT_SpellData[121093] = 59544
+
+-- Will of the Forsaken (Undead)
+LCT_SpellData[7744] = {
+	race = "Scourge",
+	cooldown = 120,
+    sets_cooldowns = {
+        -- PvP Trinket
+		{ spellid = 42292, cooldown = 45 },
+        -- Will to Survive 
+        { spellid = 59752, cooldown = 45 },
+    },
+}
+-- Will to Survive / EMFH (Human)
+LCT_SpellData[59752] = {
+    race = "Human",
+    cooldown = 120,
+    sets_cooldowns = {
+        -- WOTF
+        { spellid = 7744, cooldown = 45 },
+        -- PvP Trinket
+        { spellid = 42292, cooldown = 120 },
+    }
+}
 -- Arcane Torrent (Blood Elf)
 LCT_SpellData[28730] = {
 	race = "BloodElf",
-	silence = true,
 	cooldown = 120,
+  silence = true,
 }
-LCT_SpellData[50613] = 28730
-LCT_SpellData[80483] = 28730
-LCT_SpellData[129597] = 28730
-LCT_SpellData[155145] = 28730
 LCT_SpellData[25046] = 28730
-LCT_SpellData[69179] = 28730
 -- Blood Fury (Orc)
 LCT_SpellData[20572] = {
 	race = "Orc",
@@ -43,42 +52,11 @@ LCT_SpellData[20577] = {
 	duration = 10,
 	cooldown = 120,
 }
--- Will of the Forsaken (Undead)
-LCT_SpellData[7744] = {
-	race = "Scourge",
-	sets_cooldown = { spellid = 42292, cooldown = 30 }, -- PvP trinket
-	cooldown = 180,
-}
--- Darkflight (Worgen)
-LCT_SpellData[68992] = {
-	race = "Worgen",
-	duration = 10,
-	cooldown = 120,
-}
 -- Escape Artist (Gnome)
 LCT_SpellData[20589] = {
 	race = "Gnome",
 	defensive = true,
-	cooldown = 60,
-}
--- Quaking Palm (Pandaren)
-LCT_SpellData[107079] = {
-	race = "Pandaren",
-	cc = true,
-	cooldown = 120,
-}
--- Rocket Barrage (Goblin)
-LCT_SpellData[69041] = {
-	race = "Goblin",
-	offensive = true,
-	sets_cooldown = { spellid = 69070, cooldown = 120 }, -- Rocket jump
-	cooldown = 120,
-}
--- Rocket Jump (Goblin)
-LCT_SpellData[69070] = {
-	race = "Goblin",
-	sets_cooldown = { spellid = 69041, cooldown = 120 }, -- Rocket Barrage
-	cooldown = 120,
+	cooldown = 105,
 }
 -- Shadowmeld (Night Elf)
 LCT_SpellData[58984] = {
@@ -107,3 +85,4 @@ LCT_SpellData[26297] = {
 	duration = 10,
 	cooldown = 180
 }
+

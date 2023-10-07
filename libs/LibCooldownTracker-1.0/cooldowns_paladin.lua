@@ -1,267 +1,234 @@
 -- ================ PALADIN ================
--- Paladin/baseline
--- Cleanse
-LCT_SpellData[4987] = {
-	class = "PALADIN",
-	cooldown_starts_on_dispel = true,
-	dispel = true,
-	cooldown = 8
-}
--- Divine Protection
-LCT_SpellData[498] = {
-	class = "PALADIN",
-	defensive = true,
-	duration = 8,
-	cooldown = 60
-}
--- Divine Shield
-LCT_SpellData[642] = {
-	class = "PALADIN",
-	immune = true,
-	duration = 8,
-	cooldown = 300
-}
--- Hammer of Justice
-LCT_SpellData[853] = {
-	class = "PALADIN",
-	stun = true,
-	cooldown = 60
-}
--- Hammer of Wrath
-LCT_SpellData[24275] = {
-	class = "PALADIN",
-	offensive = true,
-	cooldown = 6
-}
--- Hand of Freedom
+
+local SPEC_PALADIN_HOLY        = 65
+local SPEC_PALADIN_PROTECTION  = 66
+local SPEC_PALADIN_RETRIBUTION = 70
+
+-- Blessing of Freedom
 LCT_SpellData[1044] = {
-	class = "PALADIN",
-	defensive = true,
-	opt_charges = 2,
-	opt_charges_linked = { 1022, 6940 },
-	duration = 6,
-	cooldown = 25
+  class = "PALADIN",
+  cooldown = 25,
 }
--- Hand of Protection
-LCT_SpellData[1022] = {
-	class = "PALADIN",
-	defensive = true,
-	opt_charges = 2,
-	opt_charges_linked = { 1044, 6940 },
-	duration = 10,
-	cooldown = 300
+
+-- Divine Intervention
+LCT_SpellData[19752] = {
+  class = "PALADIN",
+  cooldown = 600,
 }
+
+-- Crusader Strike
+LCT_SpellData[35395] = {
+  class = "PALADIN",
+  cooldown = 4,
+}
+
 -- Hand of Sacrifice
 LCT_SpellData[6940] = {
-	class = "PALADIN",
-	defensive = true,
-	opt_charges = 2,
-	opt_charges_linked = { 1044, 1022 },
-	duration = 12,
-	cooldown = 120
+  class = "PALADIN",
+  cooldown = 120,
 }
--- Judgement
-LCT_SpellData[20271] = {
-	class = "PALADIN",
-	offensive = true,
-	cooldown = 6
-}
+
 -- Lay on Hands
---[[
 LCT_SpellData[633] = {
-	class = "PALADIN",
-	heal = true -- todo: available on arenas?
-	cooldown = 600
+  opt_lower_cooldown = 2400,
+  cooldown = 1200,
+  class = "PALADIN",
 }
-]]
--- Rebuke
-LCT_SpellData[96231] = {
-	class = "PALADIN",
-	interrupt = true,
-	cooldown = 15
-}
--- Turn Evil
-LCT_SpellData[10326] = {
-	class = "PALADIN",
-	cc = true,
-	cooldown = 15
-}
--- Paladin/talents
--- Beacon of Insight
-LCT_SpellData[157007] = {
-	class = "PALADIN",
-	specID = { 65 },
-	heal = true,
-	cooldown = 15
-}
--- Seraphim
-LCT_SpellData[152262] = {
-	class = "PALADIN",
-	specID = { 66, 70 },
-	offensive = true,
-	cooldown = 30
-}
--- Blinding Light
-LCT_SpellData[115750] = {
-	class = "PALADIN",
-	talent = true,
-	cc = true,
-	cooldown = 120
-}
--- Execution Sentence
-LCT_SpellData[114157] = {
-	class = "PALADIN",
-	talent = true,
-	offensive = true,
-	heal = true, -- todo: check spellids for off/heal
-	duration = 10,
-	cooldown = 60
-}
--- Fist of Justice
-LCT_SpellData[105593] = {
-	class = "PALADIN",
-	talent = true,
-	stun = true,
-	replaces = 853,
-	cooldown = 30
-}
--- Hand of Purity
-LCT_SpellData[114039] = {
-	class = "PALADIN",
-	talent = true,
-	defensive = true,
-	duration = 6,
-	cooldown = 30
-}
--- Holy Avenger
-LCT_SpellData[105809] = {
-	class = "PALADIN",
-	talent = true,
-	offensive = true,
-	defensive = true,
-	duration = 18,
-	cooldown = 120
-}
--- Holy Prism
-LCT_SpellData[114165] = {
-	class = "PALADIN",
-	talent = true,
-	offensive = true,
-	heal = true,
-	cooldown = 20
-}
--- Light's Hammer
-LCT_SpellData[114158] = {
-	class = "PALADIN",
-	talent = true,
-	offensive = true,
-	heal = true,
-	duration = 16,
-	cooldown = 60
-}
--- Repentance
-LCT_SpellData[20066] = {
-	class = "PALADIN",
-	talent = true,
-	cc = true,
-	cooldown = 15
-}
--- Sacred Shield
-LCT_SpellData[20925] = {
-	class = "PALADIN",
-	talent = true,
-	defensive = true,
-	duration = 30,
-	cooldown = 6
-}
--- Speed of Light
-LCT_SpellData[85499] = {
-	class = "PALADIN",
-	talent = true,
-	duration = 8,
-	cooldown = 45
-}
+LCT_SpellData[2800] = 633
+LCT_SpellData[10310] = 633
+LCT_SpellData[27154] = 633
+LCT_SpellData[48788] = 633
 
--- Paladin/Holy
--- Devotion Aura
-LCT_SpellData[31821] = {
-	class = "PALADIN",
-	specID = { 65 },
-	defensive = true,
-	duration = 6,
-	cooldown = 180
-}
--- Avenging Wrath
-LCT_SpellData[31842] = {
-	class = "PALADIN",
-	specID = { 65 },
-	defensive = true,
-	duration = 20,
-	cooldown = 180
-}
--- Holy Shock
-LCT_SpellData[20473] = {
-	class = "PALADIN",
-	specID = { 65 },
-	offensive = true,
-	heal = true,
-	cooldown = 6
-}
-
--- Paladin/Protection
--- Ardent Defender
-LCT_SpellData[31850] = {
-	class = "PALADIN",
-	specID = { 66 },
-	defensive = true,
-	duration = 10,
-	cooldown = 180
-}
--- Avenger's Shield
-LCT_SpellData[31935] = {
-	class = "PALADIN",
-	specID = { 66 },
-	silence = true,
-	interrupt = true,
-	cooldown = 15
-}
--- Consecration
-LCT_SpellData[26573] = {
-	class = "PALADIN",
-	specID = { 66 },
-	offensive = true,
-	duration = 9,
-	cooldown = 9
-}
--- Guardian of Ancient Kings
-LCT_SpellData[86659] = {
-	class = "PALADIN",
-	specID = { 66 },
-	duration = 12,
-	defensive = true,
-	cooldown = 180
-}
--- Holy Wrath
-LCT_SpellData[119072] = {
-	class = "PALADIN",
-	specID = { 66 },
-	offensive = true,
-	cooldown = 15
-}
-
--- Paladin/Retribution
--- Avenging Wrath
-LCT_SpellData[31884] = {
-	class = "PALADIN",
-	specID = { 70 },
-	offensive = true,
-	duration = 20,
-	cooldown = 120
-}
 -- Exorcism
 LCT_SpellData[879] = {
-	class = "PALADIN",
-	specID = { 70 },
-	offensive = true,
-	cooldown = 15
+  class = "PALADIN",
+  cooldown = 15,
 }
+LCT_SpellData[5614] = 879
+LCT_SpellData[5615] = 879
+LCT_SpellData[10312] = 879
+LCT_SpellData[10313] = 879
+LCT_SpellData[10314] = 879
+LCT_SpellData[27138] = 879
+LCT_SpellData[48800] = 879
+LCT_SpellData[48801] = 879
+
+-- Avenging Wrath
+LCT_SpellData[31884] = {
+  class = "PALADIN",
+  cooldown = 180,
+}
+
+-- Divine Illumination
+LCT_SpellData[31842] = {
+  class = "PALADIN",
+  cooldown = 180,
+  talent = true,
+  specID = { SPEC_PALADIN_HOLY },
+}
+
+-- Hammer of Justice
+LCT_SpellData[853] = {
+  opt_lower_cooldown = 45,
+  cooldown = 60,
+  class = "PALADIN",
+}
+LCT_SpellData[5588] = 853
+LCT_SpellData[5589] = 853
+LCT_SpellData[10308] = 853
+
+-- Divine Shield
+LCT_SpellData[642] = {
+  class = "PALADIN",
+  cooldown = 300,
+}
+
+-- Holy Shield
+LCT_SpellData[20925] = {
+  class = "PALADIN",
+  cooldown = 8,
+  talent = true,
+  specID = { SPEC_PALADIN_PROTECTION },
+}
+LCT_SpellData[20927] = 20925
+LCT_SpellData[20928] = 20925
+LCT_SpellData[27179] = 20925
+LCT_SpellData[48951] = 20925
+LCT_SpellData[48952] = 20925
+
+-- Avenger's Shield
+LCT_SpellData[31935] = {
+  class = "PALADIN",
+  cooldown = 30,
+  talent = true,
+  detects = { 20925 },
+  specID = { SPEC_PALADIN_PROTECTION },
+}
+LCT_SpellData[32699] = 31935
+LCT_SpellData[32700] = 31935
+LCT_SpellData[48826] = 31935
+LCT_SpellData[48827] = 31935
+
+-- Judgement
+LCT_SpellData[20271] = {
+  opt_lower_cooldown = 8,
+  cooldown = 10,
+  class = "PALADIN",
+}
+
+-- Consecration
+LCT_SpellData[26573] = {
+  class = "PALADIN",
+  cooldown = 8,
+}
+LCT_SpellData[20922] = 26573
+LCT_SpellData[20923] = 26573
+LCT_SpellData[20924] = 26573
+LCT_SpellData[27173] = 26573
+LCT_SpellData[20116] = 26573
+LCT_SpellData[48818] = 26573
+LCT_SpellData[48819] = 26573
+
+-- Divine Favor
+LCT_SpellData[20216] = {
+  class = "PALADIN",
+  cooldown = 120,
+  talent = true,
+  specID = { SPEC_PALADIN_HOLY },
+}
+
+-- Righteous Defense
+LCT_SpellData[31789] = {
+  class = "PALADIN",
+  cooldown = 8,
+}
+
+-- Hammer of Wrath
+LCT_SpellData[24275] = {
+  class = "PALADIN",
+  cooldown = 6,
+}
+LCT_SpellData[24239] = 24275
+LCT_SpellData[24274] = 24275
+LCT_SpellData[27180] = 24275
+LCT_SpellData[48805] = 24275
+LCT_SpellData[48806] = 24275
+
+-- Repentance
+LCT_SpellData[20066] = {
+  class = "PALADIN",
+  cooldown = 60,
+  talent = true,
+  specID = { SPEC_PALADIN_RETRIBUTION },
+}
+
+-- Divine Protection
+LCT_SpellData[498] = {
+  class = "PALADIN",
+  cooldown = 180,
+}
+
+-- Holy Shock
+LCT_SpellData[20473] = {
+  class = "PALADIN",
+  cooldown = 6,
+  talent = true,
+  detects = { 20216 },
+  specID = { SPEC_PALADIN_HOLY },
+}
+LCT_SpellData[20929] = 20473
+LCT_SpellData[20930] = 20473
+LCT_SpellData[27174] = 20473
+LCT_SpellData[33072] = 20473
+LCT_SpellData[48824] = 20473
+LCT_SpellData[48825] = 20473
+
+-- Holy Wrath
+LCT_SpellData[2812] = {
+  class = "PALADIN",
+  cooldown = 30,
+}
+LCT_SpellData[10318] = 2812
+LCT_SpellData[27139] = 2812
+LCT_SpellData[48816] = 2812
+LCT_SpellData[48817] = 2812
+
+-- Blessing of Protection
+LCT_SpellData[1022] = {
+  opt_lower_cooldown = 180,
+  cooldown = 300,
+  class = "PALADIN",
+}
+LCT_SpellData[5599] = 1022
+LCT_SpellData[10278] = 1022
+
+-- Divine Storm
+LCT_SpellData[53385] = {
+  class = "PALADIN",
+  cooldown = 10,
+  talent = true,
+  specID = { SPEC_PALADIN_PROTECTION },
+}
+
+-- Hammer of the Righteous
+LCT_SpellData[53595] = {
+  class = "PALADIN",
+  cooldown = 6,
+  talent = true,
+  specID = { SPEC_PALADIN_HOLY },
+}
+
+-- Divine Plea
+LCT_SpellData[54428] = {
+  class = "PALADIN",
+  cooldown = 60,
+  talent = true,
+  specID = { SPEC_PALADIN_HOLY },
+}
+
+-- Shield of Righteousness
+LCT_SpellData[53600] = {
+  class = "PALADIN",
+  cooldown = 6,
+}
+LCT_SpellData[61411] = 53600

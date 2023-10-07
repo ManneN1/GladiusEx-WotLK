@@ -1,270 +1,195 @@
 -- ================ PRIEST ================
--- Priest/baseline
--- Fear Ward
-LCT_SpellData[6346] = {
-	class = "PRIEST",
-	defensive = true,
-	cooldown = 180
-}
--- Prayer of Mending
-LCT_SpellData[33076] = {
-	class = "PRIEST",
-	heal = true,
-	cooldown = 10
-}
--- Shadowfiend
-LCT_SpellData[34433] = {
-	class = "PRIEST",
-	offensive = true,
-	duration = 12,
-	cooldown = 180,
-}
--- Leap of Faith
-LCT_SpellData[73325] = {
-	class = "PRIEST",
-	defensive = true,
-	cooldown = 90,
-}
--- Mass Dispel
-LCT_SpellData[32375] = {
-	class = "PRIEST",
-	mass_dispel = true,
-	cooldown = 15
-}
--- Priest/talents
--- Psychic Scream
-LCT_SpellData[8122] = {
-	class = "PRIEST",
-	talent = true,
-	cc = true,
-	cooldown = 45,
-}
--- Void Tendrils
-LCT_SpellData[108920] = {
-	class = "PRIEST",
-	talent = true,
-	cc = true,
-	cooldown = 30
-}
--- Phantasm
-LCT_SpellData[114239] = {
-	class = "PRIEST",
-	talent = true,
-	defensive = true,
-	duration = 5,
-	cooldown = 30
-}
--- Angelic Feather
-LCT_SpellData[121536] = {
-	class = "PRIEST",
-	talent = true,
-	charges = 3,
-	cooldown = 10
-}
--- Desperate Prayer
-LCT_SpellData[19236] = {
-	class = "PRIEST",
-	talent = true,
-	defensive = true,
-	cooldown = 120
-}
--- Spectral Guise
-LCT_SpellData[112833] = {
-	class = "PRIEST",
-	talent = true,
-	defensive = true,
-	duration = 6,
-	cooldown = 30
-}
--- Angelic Bulwark
-LCT_SpellData[108945] = {
-	class = "PRIEST",
-	talent = true,
-	defensive = true,
-	cooldown = 90
-}
--- Power Infusion
-LCT_SpellData[10060] = {
-	class = "PRIEST",
-	talent = true,
-	offensive = true,
-	duration = 20,
-	cooldown = 120
-}
--- Spirit Shell
-LCT_SpellData[109964] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 256 },
-	defensive = true,
-	duration = 15,
-	cooldown = 60
-}
--- Cascade
-LCT_SpellData[121135] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 256, 257 },
-	heal = true,
-	cooldown = 25
-}
--- Cascade (SP)
-LCT_SpellData[127632] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 258 },
-	offensive = true,
-	cooldown = 25
-}
--- Divine Star
-LCT_SpellData[110744] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 256, 257 },
-	heal = true,
-	cooldown = 15
-}
--- Divine Star (SP)
-LCT_SpellData[122121] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 258 },
-	offensive = true,
-	cooldown = 15
-}
--- Halo
-LCT_SpellData[120517] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 256, 257 },
-	heal = true,
-	cooldown = 40
-}
--- Halo (SP)
-LCT_SpellData[120644] = {
-	class = "PRIEST",
-	talent = true,
-	specID = { 258 },
-	offensive = true,
-	heal = true,
-	cooldown = 40
-}
 
--- Priest/Discipline
--- Holy Fire
-LCT_SpellData[14914] = {
-	class = "PRIEST",
-	specID = { 256, 257 },
-	offensive = true,
-	cooldown = 10
-}
--- Archangel
-LCT_SpellData[81700] = {
-	class = "PRIEST",
-	specID = { 256 },
-	heal = true,
-	duration = 18,
-	cooldown = 30
-}
--- Penance
-LCT_SpellData[47540] = {
-	class = "PRIEST",
-	specID = { 256 },
-	heal = true,
-	duration = 2,
-	cooldown = 9,
-}
--- Pain Suppression
-LCT_SpellData[33206] = {
-	class = "PRIEST",
-	specID = { 256 },
-	defensive = true,
-	duration = 8,
-	cooldown = 180,
-}
--- Power Word: Barrier
-LCT_SpellData[62618] = {
-	class = "PRIEST",
-	specID = { 256 },
-	defensive = true,
-	duration = 10,
-	cooldown = 180,
-}
--- Purify
-LCT_SpellData[527] = {
-	class = "PRIEST",
-	specID = { 256, 257 },
-	dispel = true,
-	cooldown_starts_on_dispel = true,
-	cooldown = 8,
-}
+local SPEC_PRIEST_DISC = 256
+local SPEC_PRIEST_HOLY = 257
+local SPEC_PRIEST_SHADOW = 258
 
--- Priest/Holy
--- Guardian Spirit
-LCT_SpellData[47788] = {
-	class = "PRIEST",
-	specID = { 257 },
-	defensive = true,
-	duration = 10,
-	cooldown = 180,
+-- Power Word: Shield
+LCT_SpellData[17] = {
+  class = "PRIEST",
+  cooldown = 4,
 }
--- Lightwell
-LCT_SpellData[724] = {
-	class = "PRIEST",
-	specID = { 257 },
-	heal = true,
-	cooldown = 180,
-}
+LCT_SpellData[592] = 17
+LCT_SpellData[600] = 17
+LCT_SpellData[25217] = 17
+LCT_SpellData[25218] = 17
+LCT_SpellData[10898] = 17
+LCT_SpellData[10899] = 17
+LCT_SpellData[10900] = 17
+LCT_SpellData[10901] = 17
+LCT_SpellData[3747] = 17
+LCT_SpellData[6065] = 17
+LCT_SpellData[6066] = 17
+LCT_SpellData[10898] = 17
+LCT_SpellData[10899] = 17
+LCT_SpellData[10900] = 17
+LCT_SpellData[10901] = 17
+LCT_SpellData[25217] = 17
+LCT_SpellData[25218] = 17
+LCT_SpellData[48065] = 17
+LCT_SpellData[48066] = 17
+
 -- Divine Hymn
 LCT_SpellData[64843] = {
-	class = "PRIEST",
-	specID = { 257 },
-	heal = true,
-	duration = 8,
-	cooldown = 180
-}
--- Holy Word: Chastise
-LCT_SpellData[88625] = {
-	class = "PRIEST",
-	specID = { 257 },
-	cc = true,
-	cooldown = 30
-}
--- Holy Word: Serenity
-LCT_SpellData[88684] = {
-	class = "PRIEST",
-	specID = { 257 },
-	heal = true,
-	cooldown = 10
-}
--- Circle of Healing
-LCT_SpellData[34861] = {
-	class = "PRIEST",
-	specID = { 257 },
-	heal = true,
-	cooldown = 12
+  class = "PRIEST",
+  cooldown = 480,
+  defensive = true,
 }
 
--- Priest/Shadow
--- Dispersion
-LCT_SpellData[47585] = {
-	class = "PRIEST",
-	specID = { 258 },
-	defensive = true,
-	duration = 6,
-	cooldown = 120
+-- Hymn of Hope
+LCT_SpellData[64901] = {
+  class = "PRIEST",
+  cooldown = 360,
+  defensive = true,
 }
--- Psychic Horror
-LCT_SpellData[64044] = {
-	class = "PRIEST",
-	specID = { 258 },
-	cc = true,
-	cooldown = 45
+
+-- Fade
+LCT_SpellData[586] = {
+  class = "PRIEST",
+  cooldown = 30,
+  opt_lower_cooldown = 24,
 }
+
+-- Power Infusion
+LCT_SpellData[10060] = {
+  class = "PRIEST",
+  cooldown = 120,
+  talent = true,
+  specID = { SPEC_PRIEST_DISC },
+}
+
+-- Desperate Prayer
+LCT_SpellData[48173] = {
+  class = "PRIEST",
+  cooldown = 120,
+}
+LCT_SpellData[19236] = 48173
+LCT_SpellData[19238] = 48173
+LCT_SpellData[19240] = 48173
+LCT_SpellData[19241] = 48173
+LCT_SpellData[19242] = 48173
+LCT_SpellData[19243] = 48173
+LCT_SpellData[25437] = 48173
+LCT_SpellData[48172] = 48173
+
+-- Shadow Word: Death
+LCT_SpellData[32379] = {
+  class = "PRIEST",
+  cooldown = 12,
+}
+LCT_SpellData[32996] = 32379
+LCT_SpellData[48157] = 32379
+LCT_SpellData[48158] = 32379
+
 -- Silence
 LCT_SpellData[15487] = {
-	class = "PRIEST",
-	specID = { 258, 256 },
-	silence = true,
-	cooldown = 45
+  class = "PRIEST",
+  cooldown = 45,
+  talent = true,
+  specID = { SPEC_PRIEST_SHADOW },
+}
+
+-- Shadowfiend
+LCT_SpellData[34433] = {
+  class = "PRIEST",
+  cooldown = 300,
+}
+
+-- Psychic Scream
+LCT_SpellData[8122] = {
+  class = "PRIEST",
+  cooldown = 30,
+  opt_lower_cooldown = 26,
+}
+LCT_SpellData[8124] = 8122
+LCT_SpellData[10888] = 8122
+LCT_SpellData[10890] = 8122
+
+-- Mind Blast
+LCT_SpellData[8092] = {
+  class = "PRIEST",
+  cooldown = 8,
+  opt_lower_cooldown = 5.5,
+}
+LCT_SpellData[8102] = 8092
+LCT_SpellData[8103] = 8092
+LCT_SpellData[8104] = 8092
+LCT_SpellData[8105] = 8092
+LCT_SpellData[8106] = 8092
+LCT_SpellData[10945] = 8092
+LCT_SpellData[10946] = 8092
+LCT_SpellData[10947] = 8092
+LCT_SpellData[25372] = 8092
+LCT_SpellData[25375] = 8092
+LCT_SpellData[48126] = 8092
+LCT_SpellData[48127] = 8092
+
+-- Prayer of Mending
+LCT_SpellData[33076] = {
+  class = "PRIEST",
+  cooldown = 10,
+}
+LCT_SpellData[48112] = 33076
+LCT_SpellData[48113] = 33076
+
+-- Inner Focus
+LCT_SpellData[14751] = {
+  class = "PRIEST",
+  cooldown = 180,
+  talent = true,
+  specID = { SPEC_PRIEST_DISC },
+}
+
+-- Pain Suppression
+LCT_SpellData[33206] = {
+  class = "PRIEST",
+  cooldown = 180,
+  talent = true,
+  specID = { SPEC_PRIEST_DISC },
+}
+
+-- Fear Ward
+LCT_SpellData[6346] = {
+  class = "PRIEST",
+  cooldown = 180,
+}
+
+-- Lightwell
+LCT_SpellData[724] = {
+  class = "PRIEST",
+  cooldown = 180,
+  talent = true,
+  specID = { SPEC_PRIEST_HOLY },
+}
+LCT_SpellData[27870] = 724
+LCT_SpellData[27871] = 724
+LCT_SpellData[28275] = 724
+LCT_SpellData[48086] = 724
+LCT_SpellData[48087] = 724
+
+-- Penance
+LCT_SpellData[47540] = {
+  class = "PRIEST",
+  cooldown = 12,
+  talent = true,
+  specID = { SPEC_PRIEST_DISC },
+}
+LCT_SpellData[53005] = 47540
+LCT_SpellData[53006] = 47540
+LCT_SpellData[53007] = 47540
+
+-- Dispersion
+LCT_SpellData[47585] = {
+  class = "PRIEST",
+  cooldown = 120,
+  talent = true,
+  specID = { SPEC_PRIEST_SHADOW },
+}
+
+-- Guardian Spirit
+LCT_SpellData[47788] = {
+  class = "PRIEST",
+  cooldown = 180,
+  talent = true,
+  specID = { SPEC_PRIEST_HOLY },
 }
