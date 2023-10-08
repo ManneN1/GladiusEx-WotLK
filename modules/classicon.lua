@@ -226,7 +226,7 @@ local function GetDefaultImportantAuras()
         [GladiusEx:SafeGetSpellName(1543)] = 0.8, -- Flare
         [GladiusEx:SafeGetSpellName(34709)] = 0.8, -- Shadow Sight
         [GladiusEx:SafeGetSpellName(2645)] = 0.5, -- Ghost Wolf
-        [33891]                            = 0.5, -- Tree of Life (cannot use SafeGetSpellName because there's another aura with the same name that everyone in the team gets)
+        --[33891]                            = 0.5, -- Tree of Life (cannot use SafeGetSpellName because there's another aura with the same name that everyone in the team gets)
         [GladiusEx:SafeGetSpellName(9634)] = 0.5, -- Dire Bear Form
         [GladiusEx:SafeGetSpellName(768)] = 0.5, -- Cat Form
         [GladiusEx:SafeGetSpellName(783)] = 0.5, -- Travel Form
