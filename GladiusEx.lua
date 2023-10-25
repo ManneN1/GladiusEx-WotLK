@@ -753,10 +753,13 @@ function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
 	self:RefreshUnit(unit)
 end
 
-function GladiusEx:IdentifyUnitClass(unit)
-    if UnitClass(unit) and self.buttons[unit].class == nil then
+function GladiusEx:IdentifyUnitClass(unit, skipRefresh)
+    if self.buttons[unit].class == nil and UnitClass(unit) then
         self.buttons[unit].class = select(2, UnitClass(unit))
-        self:RefreshUnit(unit)
+        
+        if not skipRefresh then
+            self:RefreshUnit(unit)
+        end
     end
 end
 
@@ -767,13 +770,30 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
 		self:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
         return
     end
-	
-	local specname = self.specSpells[name]
-	if (specname and self.buttons[unit] and (self.buttons[unit].specID == nil)) then
-		 self.buttons[unit].specID = tonumber(specNameToID[tostring(specname)] or 0)
-		 self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
-		 self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
-	end     
+    
+    local specname
+    
+    if (self.buttons[unit].specID == nil) then
+        if unit == "player" then
+
+            local maxPoints = 0
+            for i = 1,3 do
+                local tmpname, _, numPoints = GetTalentTabInfo(i)
+                if numPoints > maxPoints then
+                    specname = tmpname
+                    maxPoints = numPoints
+                end
+            end
+        else
+            specname = self.specSpells[name]
+        end
+    end
+
+    if (specname and self.buttons[unit]) then
+         self.buttons[unit].specID = tonumber(specNameToID[tostring(specname)] or 0)
+         self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
+         self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
+    end     
 end
 
 function GladiusEx:UNIT_AURA(event, unit)
@@ -953,6 +973,14 @@ end
 
 function GladiusEx:RefreshUnit(unit)
 	if not self.buttons[unit] or self:IsTesting(unit) then return end
+
+    if self.buttons[unit].class == nil then
+        self:IdentifyUnitClass(unit, true)
+    end
+    
+    if self.buttons[unit].specID == nil then
+        self:IdentifyUnitSpecialization(unit)
+    end
 
 	-- refresh modules
 	for n, m in self:IterateModules() do
