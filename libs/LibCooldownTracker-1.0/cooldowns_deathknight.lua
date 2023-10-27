@@ -39,7 +39,7 @@ LCT_SpellData[49016] = {
   class = "DEATHKNIGHT",
   cooldown = 180,
   talent = true,
-  specID = { SPEC_DK_UNHOLY },
+  specID = { SPEC_DK_BLOOD },
 }
 -- Dancing Rune Weapon
 LCT_SpellData[49028] = {

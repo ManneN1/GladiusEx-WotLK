@@ -264,6 +264,7 @@ LCT_SpellData[34490] = {
 LCT_SpellData[1742] = {
   class = "HUNTER",
   cooldown = 45,
+  pet = true,
 }
 
 -- Shell Shield
@@ -298,6 +299,8 @@ LCT_SpellData[1499] = {
     sets_cooldowns = {
         -- Freezing Arrow
         { spellid = 60192, cooldown = 30 },
+        -- Frost Trap
+        { spellid = 13809, cooldown = 30 },
     }
 }
 LCT_SpellData[14310] = 1499
@@ -370,6 +373,12 @@ LCT_SpellData[13809] = {
   opt_lower_cooldown = 24,
   class = "HUNTER",
   cooldown = 30,
+	sets_cooldowns = {
+        -- Freezing Trap
+        { spellid = 1499, cooldown = 30 },
+        -- Freezing Arrow
+        { spellid = 60192, cooldown = 30 },
+	}
 }
 
 -- Explosive Trap
@@ -435,5 +444,21 @@ LCT_SpellData[60192] = {
 	sets_cooldowns = {
         -- Freezing Trap
         { spellid = 1499, cooldown = 30 },
+        -- Frost Trap
+        { spellid = 13809, cooldown = 30 },
 	}
+}
+
+-- Roar of Sacrifice
+LCT_SpellData[53490] = {
+  class = "HUNTER",
+  cooldown = 60,
+  pet = true,
+}
+
+-- Intervene
+LCT_SpellData[53476] = {
+  class = "HUNTER",
+  cooldown = 30,
+  pet = true,
 }

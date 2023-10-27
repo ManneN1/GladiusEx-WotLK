@@ -69,8 +69,8 @@ LCT_SpellData[31842] = {
 
 -- Hammer of Justice
 LCT_SpellData[853] = {
-  opt_lower_cooldown = 45,
-  cooldown = 60,
+  cooldown = 40, -- Note: The CD is generally 60sec but is reduced by Imp. HoJ talent (early prot) which everyone takes
+  opt_lower_cooldown = 30, -- Note: There is another deep prot talent to reduce the CD by another 10 seconds
   class = "PALADIN",
 }
 LCT_SpellData[5588] = 853

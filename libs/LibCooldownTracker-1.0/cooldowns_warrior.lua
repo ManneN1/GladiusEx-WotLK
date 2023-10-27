@@ -113,12 +113,27 @@ LCT_SpellData[6552] = {
   class = "WARRIOR",
   cooldown = 10,
   interrupt = true,
+	sets_cooldowns = {
+        -- Shield Bash
+        { spellid = 72, cooldown = 10 },
+	}
 }
 LCT_SpellData[72] = 6552
 LCT_SpellData[1671] = 6552
 LCT_SpellData[1672] = 6552
 LCT_SpellData[6554] = 6552
 LCT_SpellData[29704] = 6552
+
+-- Shield Bash
+LCT_SpellData[72] = {
+  class = "WARRIOR",
+  cooldown = 12,
+  interrupt = true,
+	sets_cooldowns = {
+        -- Pummel
+        { spellid = 6552, cooldown = 12 },
+	}
+}
 
 -- Berserker Rage
 LCT_SpellData[18499] = {

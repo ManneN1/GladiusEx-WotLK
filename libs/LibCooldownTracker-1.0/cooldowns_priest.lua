@@ -47,6 +47,7 @@ LCT_SpellData[64901] = {
 LCT_SpellData[586] = {
   class = "PRIEST",
   cooldown = 30,
+  specID = { SPEC_PRIEST_SHADOW },
   opt_lower_cooldown = 24,
 }
 
@@ -136,8 +137,8 @@ LCT_SpellData[48113] = 33076
 LCT_SpellData[14751] = {
   class = "PRIEST",
   cooldown = 180,
+  specID = { SPEC_PRIEST_DISC, SPEC_PRIEST_SHADOW }
   talent = true,
-  specID = { SPEC_PRIEST_DISC },
 }
 
 -- Pain Suppression
@@ -192,4 +193,12 @@ LCT_SpellData[47788] = {
   cooldown = 180,
   talent = true,
   specID = { SPEC_PRIEST_HOLY },
+}
+
+-- Psychic Horror
+LCT_SpellData[64044] = {
+  class = "PRIEST",
+  cooldown = 120,
+  talent = true,
+  specID = { SPEC_PRIEST_SHADOW },
 }

@@ -25,7 +25,7 @@ LCT_SpellData[14177] = {
   class = "ROGUE",
   cooldown_starts_on_aura_fade = true,
   talent = true,
-  specID = { SPEC_ROGUE_SUB },
+  specID = { SPEC_ROGUE_ASSA },
 }
 
 -- Shadowstep

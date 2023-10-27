@@ -195,7 +195,8 @@ LCT_SpellData[50334] = {
 
 -- Starfall
 LCT_SpellData[48505] = {
-  cooldown = 180,
+  cooldown = 60,
+  -- opt_cooldown = 60 Note: Assume everyone runs with the glyph
   class = "DRUID",
   talent = true,
   duration = 10,

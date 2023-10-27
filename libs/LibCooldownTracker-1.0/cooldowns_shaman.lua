@@ -21,6 +21,7 @@ LCT_SpellData[16188] = {
   cooldown = 120,
   class = "SHAMAN",
   talent = true,
+  specID = { SPEC_SHAMAN_RESTORATION },
 	cooldown_starts_on_dispel = true,
 }
 
@@ -29,6 +30,7 @@ LCT_SpellData[16190] = {
   cooldown = 300,
   class = "SHAMAN",
   talent = true,
+  specID = { SPEC_SHAMAN_RESTORATION },
 }
 
 -- Fire Elemental Totem
@@ -182,7 +184,7 @@ LCT_SpellData[61301] = 61295
 -- Thunderstorm
 LCT_SpellData[51490] = {
   class = "SHAMAN",
-  cooldown = 45,
+  cooldown = 35,
   talent = true,
   specID = { SPEC_SHAMAN_ELEMENTAL },
 }
