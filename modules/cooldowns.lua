@@ -408,7 +408,7 @@ function Cooldowns:OnEnable()
 	CT.RegisterCallback(self, "LCT_CooldownUsed")
 	CT.RegisterCallback(self, "LCT_CooldownsReset")
 	self:RegisterEvent("UNIT_NAME_UPDATE")
-	self:RegisterMessage("GLADIUS_SPEC_UPDATE")
+	self:RegisterMessage("GLADIUSEX_SPEC_UPDATE")
 end
 
 function Cooldowns:OnDisable()
@@ -460,7 +460,7 @@ function Cooldowns:GetModuleAttachFrame(unit, point)
 	return self:GetGroupState(unit, gidx).frame
 end
 
-function Cooldowns:GLADIUS_SPEC_UPDATE(event, unit)
+function Cooldowns:GLADIUSEX_SPEC_UPDATE(event, unit)
 	self:UpdateIcons(unit)
 end
 
