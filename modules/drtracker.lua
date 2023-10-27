@@ -603,11 +603,15 @@ function DRTracker:GetOptions(unit)
         for spellid, _ in DRData:IterateProviders(key) do
             local spellname, _, spellicon = GetSpellInfo(spellid)
             if spellname == nil then
-                print("This spell ID does not exist: "..spellid)
+                print("This Diminishing Returns related spell ID does not exist: "..spellid)
             end
-            if spellname ~= nil and not seen_icons[spellicon] then
+            if spellname ~= nil and (not seen_icons[spellname] or not seen_icons[spellname][spellicon]) then
+                if seen_icons[spellname] then
+                    seen_icons[spellname][spellicon] = true
+                else
+                    seen_icons[spellname] = { [spellicon] = true }
+                end
                 icon_spell_ids[id] = spellid
-                seen_icons[spellicon] = true
                 table.insert(
                     values,
                     string.format(" |T%s:20|t %s", spellicon, spellname)
