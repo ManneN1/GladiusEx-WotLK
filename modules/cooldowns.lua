@@ -1917,13 +1917,14 @@ function Cooldowns:MakeGroupOptions(unit, group)
 			}
 			if spelldata.class then
 				if not args[spelldata.class] then
-					args[spelldata.class] = {
-						type = "group",
-						name = LOCALIZED_CLASS_NAMES_MALE[spelldata.class],
-						icon = [[Interface\ICONS\ClassIcon_]] .. spelldata.class,
-						disabled = function() return not self:IsUnitEnabled(unit) end,
-						order = 1,
-						args = {}
+                    args[spelldata.class] = {
+                        type = "group",
+                        name = LOCALIZED_CLASS_NAMES_MALE[spelldata.class],
+                        icon = [[Interface\Glues\CharacterCreate\UI-CharacterCreate-Classes]],
+                        iconCoords = CLASS_BUTTONS[spelldata.class],
+                        disabled = function() return not self:IsUnitEnabled(unit) end,
+                        order = 1,
+                        args = {}
 					}
 				end
 				if spelldata.specID then
@@ -1934,7 +1935,7 @@ function Cooldowns:MakeGroupOptions(unit, group)
 							args[spelldata.class].args["spec" .. specID] = {
 								type = "group",
 								name = name,
-								-- icon = icon,
+								icon = GladiusEx.SPECIALIZATION_ICONS[specID],
 								disabled = function() return not self:IsUnitEnabled(unit) end,
 								order = 3 + specID,
 								args = {}
