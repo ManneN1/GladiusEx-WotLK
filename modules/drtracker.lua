@@ -579,44 +579,44 @@ function DRTracker:GetOptions(unit)
 
 	local index = 1
 	for key, name in pairs(DRData:GetCategories()) do
-        if DRData:GetNumSpellsInCategory(key) > 1 then
-            options.categories.args.categories.args[key] = {
-                type = "toggle",
-                name = name,
-                get = function(info)
-                    if self.db[unit].drCategories[info[#info]] == nil then
-                        return true
-                    else
-                        return self.db[unit].drCategories[info[#info]]
-                    end
-                end,
-                set = function(info, value)
-                    self.db[unit].drCategories[info[#info]] = value
-                end,
-                disabled = function() return not self:IsUnitEnabled(unit) end,
-                order = index * 5,
-            }
-
-            local values = {"Default"}
-            local seen_icons = {}
-            local idx = 1
-            local spellid_by_idx = {}
-            for spellid, _ in DRData:IterateProviders(key) do
-                local spellname, _, spellicon = GetSpellInfo(spellid)
-				if spellname == nil then
-					print("This spell ID does not exist: "..spellid)
-				end
-                if spellname ~= nil and not seen_icons[spellicon] then
-                    spellid_by_idx[idx] = spellid
-                    seen_icons[spellicon] = true
-                    table.insert(
-                        values,
-                        string.format(" |T%s:20|t %s", spellicon, spellname)
-                    )
-                    idx = idx + 1
+        options.categories.args.categories.args[key] = {
+            type = "toggle",
+            name = name,
+            get = function(info)
+                if self.db[unit].drCategories[info[#info]] == nil then
+                    return true
+                else
+                    return self.db[unit].drCategories[info[#info]]
                 end
-            end
+            end,
+            set = function(info, value)
+                self.db[unit].drCategories[info[#info]] = value
+            end,
+            disabled = function() return not self:IsUnitEnabled(unit) end,
+            order = index * 5,
+        }
 
+        local values = {"Default"}
+        local seen_icons = {}
+        local id = 1
+        local icon_spell_ids = {}
+        for spellid, _ in DRData:IterateProviders(key) do
+            local spellname, _, spellicon = GetSpellInfo(spellid)
+            if spellname == nil then
+                print("This spell ID does not exist: "..spellid)
+            end
+            if spellname ~= nil and not seen_icons[spellicon] then
+                icon_spell_ids[id] = spellid
+                seen_icons[spellicon] = true
+                table.insert(
+                    values,
+                    string.format(" |T%s:20|t %s", spellicon, spellname)
+                )
+                id = id + 1
+            end
+        end
+        
+        if #icon_spell_ids > 1 then
             options.icon_for_category.args[key] = {
                 type = "select",
                 name = name,
@@ -627,10 +627,10 @@ function DRTracker:GetOptions(unit)
                     if not self.db[unit].drIcons[key] then
                         return 1
                     end
-                    for idx, spellid in pairs(spellid_by_idx) do
+                    for id, spellid in pairs(icon_spell_ids) do
                         if spellid == self.db[unit].drIcons[key] then
                             -- +1 because 1 is "default"
-                            return idx + 1
+                            return id + 1
                         end
                     end
                     return 1
@@ -638,14 +638,14 @@ function DRTracker:GetOptions(unit)
                 set = function(info, value)
                     -- 1 = default
                     if value > 1 then
-                        self.db[unit].drIcons[key] = spellid_by_idx[value - 1]
+                        self.db[unit].drIcons[key] = icon_spell_ids[value - 1]
                     else
                         self.db[unit].drIcons[key] = nil
                     end
                 end,
             }
         end
-		index = index + 1
+        index = index + 1
 	end
 
 	return options
