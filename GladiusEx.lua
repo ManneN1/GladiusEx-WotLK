@@ -740,7 +740,7 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
 		local seen = self:GetAlwaysUpFrameForPlayers()
         if seen and seen == 0 then -- Spectating (text shows "0 Players Remaining")
 			self:StartSpectate()
-        elseif (seen and seen > 0) or UnitExists("arena1") or UnitExists("arena2") or UnitExists("arena3") or UnitExists("arena3") or UnitExists("arena5") then -- Inside (started)
+        elseif not UnitAura("player", "Arena Preparation") then -- Inside (started)
             -- game is already started, try to identify spec and classes immediately
 			self:ReloadFixTrackClassesSpecs()
         end
@@ -764,8 +764,16 @@ function GladiusEx:ReloadFixTrackClassesSpecs(msg)
 	-- Identify players
 	for i = 1, self.seenPlayers do
 		self:IdentifyUnitClass("arena"..i)
-		self:UNIT_AURA(nil, "arena"..i) -- check for spec by looking at auras
+        self:IdentifyUnitSpecialization("arena"..i)
+        
+        if self.seenPlayers > 1 then
+            self:IdentifyUnitClass("party"..i)
+            self:IdentifyUnitSpecialization("party"..i)
+        end
 	end
+    
+    self:IdentifyUnitClass("player")
+    self:IdentifyUnitSpecialization("player")
 end
 
 function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
@@ -788,7 +796,7 @@ function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
 end
 
 function GladiusEx:IdentifyUnitClass(unit, skipRefresh)
-    if self.buttons[unit].class == nil and UnitClass(unit) then
+    if self.buttons[unit] and not self.buttons[unit].class and UnitClass(unit) then
         self.buttons[unit].class = select(2, UnitClass(unit))
         
         if not skipRefresh then
@@ -798,7 +806,9 @@ function GladiusEx:IdentifyUnitClass(unit, skipRefresh)
 end
 
 function GladiusEx:IdentifyUnitSpecialization(unit, name)
-	if self.knownSpecs == self.arena_size and not self:IsTesting() then
+    if not unit or not self.buttons[unit] then return end
+    
+    if self.knownSpecs and self.arena_size and self.knownSpecs == self.arena_size * 2 and not self:IsTesting() then
         self:UnregisterEvent("UNIT_AURA")
         self:UnregisterEvent("UNIT_SPELLCAST_START")
 		self:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
@@ -808,38 +818,46 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
     local specname
     
     if (self.buttons[unit].specID == nil) then
-        if unit == "player" then
-
-            local maxPoints = 0
-            for i = 1,3 do
-                local tmpname, _, numPoints = GetTalentTabInfo(i)
-                if numPoints > maxPoints then
-                    specname = tmpname
-                    maxPoints = numPoints
-                end
-            end
-        else
+        if name then
             specname = self.specSpells[name]
+        --elseif UnitIsUnit(unit, "player") then
+        --   specname = self:IdentifyPlayerSpecialization()
+        else
+            for index = 1, 40 do
+                local  name, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
+                
+                if not name then break end
+                
+                self:IdentifyUnitSpecialization(unitCaster, name)
+            end
+        end
+
+        if specname and self.buttons[unit] then
+             self.buttons[unit].specID = tonumber(specNameToID[tostring(specname)] or 0)
+             self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
+             self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
+        end     
+    end
+end
+
+function GladiusEx:IdentifyPlayerSpecialization()
+    local maxPoints, specName = 0, nil
+    for i = 1,3 do
+        local tmpname, _, numPoints = GetTalentTabInfo(i)
+        if numPoints > maxPoints then
+            specName = tmpname
+            maxPoints = numPoints
         end
     end
-
-    if (specname and self.buttons[unit]) then
-         self.buttons[unit].specID = tonumber(specNameToID[tostring(specname)] or 0)
-         self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
-         self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
-    end     
+    
+    return specName
 end
 
 function GladiusEx:UNIT_AURA(event, unit)
-    if (not self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+    if not (self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
     
 	self:IdentifyUnitClass(unit)
-    
-	for index = 1, 40 do
-        local  name, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
-        if (not name) then break end
-		self:IdentifyUnitSpecialization(unitCaster, name)
-	end
+    self:IdentifyUnitSpecialization(unit)
 end
 
 function GladiusEx:UNIT_SPELLCAST_SUCCEEDED(event, unit, name)
@@ -1012,7 +1030,7 @@ function GladiusEx:RefreshUnit(unit)
         self:IdentifyUnitClass(unit, true)
     end
     
-    if self.buttons[unit].specID == nil then
+    if self.buttons[unit].class and self.buttons[unit].specID == nil then
         self:IdentifyUnitSpecialization(unit)
     end
 
