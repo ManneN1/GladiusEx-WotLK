@@ -450,10 +450,16 @@ LCT_SpellData[60192] = {
 }
 
 -- Roar of Sacrifice
-LCT_SpellData[53490] = {
+LCT_SpellData[53480] = {
   class = "HUNTER",
   cooldown = 60,
-  specID = { SPEC_HUNTER_MM, SPEC_HUNTER_SURV },
+  pet = true,
+}
+
+-- Bullheaded
+LCT_SpellData[53490] = {
+  class = "HUNTER",
+  cooldown = 180,
   pet = true,
 }
 
