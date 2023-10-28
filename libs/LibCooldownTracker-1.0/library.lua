@@ -300,21 +300,25 @@ local function CooldownEvent(event, unit, spellid)
 				end
 
 				-- set other cooldowns
-				if spelldata.sets_cooldown then
-					local cspellid = spelldata.sets_cooldown.spellid
-					local cspelldata = SpellData[cspellid]
-					if (tpu[cspellid] and tpu[cspellid].detected) or (cspelldata ~= nil and not cspelldata.talent and not cspelldata.glyph) then
-						if not tpu[cspellid] then
-							tpu[cspellid] = {}
-						end
-						if not tpu[cspellid].cooldown_end or (tpu[cspellid].cooldown_end < (now + spelldata.sets_cooldown.cooldown)) then
-							tpu[cspellid].cooldown_start = now
-							tpu[cspellid].cooldown_end = now + spelldata.sets_cooldown.cooldown
-							tpu[cspellid].used_start = tpu[cspellid].used_start or 0
-							tpu[cspellid].used_end = tpu[cspellid].used_end or 0
-						end
-					end
-				end
+
+				local sets_cooldowns = spelldata.sets_cooldown or spelldata.sets_cooldown and { spelldata.sets_cooldown } or {}
+                
+                for i = 1, #sets_cooldowns do
+                    local cd = sets_cooldowns[i]
+                    local cspellid = cd.spellid
+                    local cspelldata = SpellData[cspellid]
+                    if cspelldata and ((tpu[cspellid] and tpu[cspellid].detected) or (not cspelldata.talent)) then
+                        if not tpu[cspellid] then
+                            tpu[cspellid] = {}
+                        end
+                        if not tpu[cspellid].cooldown_end or (tpu[cspellid].cooldown_end < (now + cd.cooldown)) then
+                            tpu[cspellid].cooldown_start = now
+                            tpu[cspellid].cooldown_end = now + cd.cooldown
+                            tpu[cspellid].used_start = tpu[cspellid].used_start or 0
+                            tpu[cspellid].used_end = tpu[cspellid].used_end or 0
+                        end
+                    end
+                end
 			end
 		end
 

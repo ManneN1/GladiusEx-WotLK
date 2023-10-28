@@ -296,7 +296,7 @@ LCT_SpellData[1499] = {
     opt_lower_cooldown = 24,
     class = "HUNTER",
     cooldown = 30,
-    sets_cooldowns = {
+    sets_cooldown = {
         -- Freezing Arrow
         { spellid = 60192, cooldown = 30 },
         -- Frost Trap
@@ -373,7 +373,7 @@ LCT_SpellData[13809] = {
   opt_lower_cooldown = 24,
   class = "HUNTER",
   cooldown = 30,
-	sets_cooldowns = {
+	sets_cooldown = {
         -- Freezing Trap
         { spellid = 1499, cooldown = 30 },
         -- Freezing Arrow
@@ -441,7 +441,7 @@ LCT_SpellData[53271] = {
 LCT_SpellData[60192] = {
   class = "HUNTER",
   cooldown = 30,
-	sets_cooldowns = {
+	sets_cooldown = {
         -- Freezing Trap
         { spellid = 1499, cooldown = 30 },
         -- Frost Trap
@@ -453,6 +453,7 @@ LCT_SpellData[60192] = {
 LCT_SpellData[53490] = {
   class = "HUNTER",
   cooldown = 60,
+  specID = { SPEC_HUNTER_MM, SPEC_HUNTER_SURV },
   pet = true,
 }
 
@@ -460,5 +461,7 @@ LCT_SpellData[53490] = {
 LCT_SpellData[53476] = {
   class = "HUNTER",
   cooldown = 30,
+  -- opt_cooldown = 21 Note: This is only applicable for BM, and BM doesn't use Intervene
+  specID = { SPEC_HUNTER_MM, SPEC_HUNTER_SURV },
   pet = true,
 }

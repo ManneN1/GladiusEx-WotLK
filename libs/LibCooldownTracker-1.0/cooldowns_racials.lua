@@ -11,10 +11,10 @@ LCT_SpellData[28880] = {
 LCT_SpellData[7744] = {
 	race = "Scourge",
 	cooldown = 120,
-    sets_cooldowns = {
+    sets_cooldown = {
         -- PvP Trinket
 		{ spellid = 42292, cooldown = 45 },
-        -- Will to Survive 
+        -- Every Man for Himself
         { spellid = 59752, cooldown = 45 },
     },
 }
@@ -22,12 +22,12 @@ LCT_SpellData[7744] = {
 LCT_SpellData[59752] = {
     race = "Human",
     cooldown = 120,
-    sets_cooldowns = {
+    sets_cooldown = {
         -- WOTF
         { spellid = 7744, cooldown = 45 },
         -- PvP Trinket
         { spellid = 42292, cooldown = 120 },
-    }
+    },
 }
 -- Arcane Torrent (Blood Elf)
 LCT_SpellData[28730] = {
