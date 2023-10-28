@@ -137,7 +137,7 @@ LCT_SpellData[48113] = 33076
 LCT_SpellData[14751] = {
   class = "PRIEST",
   cooldown = 180,
-  specID = { SPEC_PRIEST_DISC, SPEC_PRIEST_SHADOW }
+  specID = { SPEC_PRIEST_DISC, SPEC_PRIEST_SHADOW, SPEC_PRIEST_HOLY },
   talent = true,
 }
 
