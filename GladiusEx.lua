@@ -815,11 +815,11 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
         return
     end
     
-    local specname
+    local specID
     
     if (self.buttons[unit].specID == nil) then
         if name then
-            specname = self.specSpells[name]
+            specID = self.specSpells[name]
         --elseif UnitIsUnit(unit, "player") then
         --   specname = self:IdentifyPlayerSpecialization()
         else
@@ -832,8 +832,8 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
             end
         end
 
-        if specname and self.buttons[unit] then
-             self.buttons[unit].specID = tonumber(specNameToID[tostring(specname)] or 0)
+        if specID and self.buttons[unit] then
+             self.buttons[unit].specID = specID
              self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
              self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
         end     
