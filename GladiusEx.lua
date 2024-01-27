@@ -760,6 +760,11 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
     end
 end
 
+function GladiusEx:StartSpectate()
+    self.spectating = true
+    -- do something to set the buttons for party frames to arena
+end
+
 function GladiusEx:ReloadFixTrackClassesSpecs(msg)
     -- Identify players
     for i = 1, self.seenPlayers do
