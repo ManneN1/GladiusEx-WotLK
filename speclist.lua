@@ -61,9 +61,9 @@ function GladiusEx:GetSpecList()
         [GladiusEx:SafeGetSpellName(31661)] = 63,        -- Dragon's Breath
         [GladiusEx:SafeGetSpellName(11366)] = 63,        -- Pyroblast
         [GladiusEx:SafeGetSpellName(11129)] = 63,        -- Combustion        
-        [GladiusEx:SafeGetSpellName(44572)] = 251,        -- Deep Freeze
-        [GladiusEx:SafeGetSpellName(31687)] = 251,        -- Summon Water Elemental
-        [GladiusEx:SafeGetSpellName(11426)] = 251,        -- Ice Barrier        
+        [GladiusEx:SafeGetSpellName(44572)] = 64,        -- Deep Freeze
+        [GladiusEx:SafeGetSpellName(31687)] = 64,        -- Summon Water Elemental
+        [GladiusEx:SafeGetSpellName(11426)] = 64,        -- Ice Barrier        
         -- WARLOCK                                  
         [GladiusEx:SafeGetSpellName(48181)] = 265,        -- Haunt
         [GladiusEx:SafeGetSpellName(30108)] = 265,        -- Unstable Affliction
