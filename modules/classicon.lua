@@ -237,6 +237,39 @@ local function GetDefaultImportantAuras()
     }
 end
 
+local SPECIALIZATION_ICONS = {
+    [250] = "Interface\\Icons\\Spell_Deathknight_BloodPresence",
+    [251] = "Interface\\Icons\\Spell_Deathknight_FrostPresence",
+    [252] = "Interface\\Icons\\Spell_Deathknight_UnholyPresence",
+    [102] = "Interface\\Icons\\Spell_Nature_StarFall",
+    [103] = "Interface\\Icons\\Ability_Druid_CatForm",
+    [105] = "Interface\\Icons\\Spell_Nature_HealingTouch",
+    [253] = "Interface\\Icons\\Ability_Hunter_BeastTaming",
+    [254] = "Interface\\Icons\\Ability_Marksmanship",
+    [255] = "Interface\\Icons\\Ability_Hunter_SwiftStrike",
+    [62]  = "Interface\\Icons\\Spell_Holy_MagicalSentry",
+    [63]  = "Interface\\Icons\\Spell_Fire_FlameBolt",
+    [64]  = "Interface\\Icons\\Spell_Frost_FrostBolt02",
+    [65]  = "Interface\\Icons\\Spell_Holy_HolyBolt",
+    [66]  = "Interface\\Icons\\Spell_Holy_DevotionAura",
+    [70]  = "Interface\\Icons\\Spell_Holy_AuraOfLight",
+    [256] = "Interface\\Icons\\Spell_Holy_WordFortitude",
+    [257] = "Interface\\Icons\\Spell_Holy_GuardianSpirit",
+    [258] = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
+    [259] = "Interface\\Icons\\Ability_Rogue_ShadowStrikes",
+    [260] = "Interface\\Icons\\Ability_BackStab",
+    [261] = "Interface\\Icons\\Ability_Stealth",
+    [262] = "Interface\\Icons\\Spell_Nature_Lightning",
+    [263] = "Interface\\Icons\\Spell_Nature_LightningShield",
+    [264] = "Interface\\Icons\\Spell_Nature_MagicImmunity",
+    [265] = "Interface\\Icons\\Spell_Shadow_DeathCoil",
+    [266] = "Interface\\Icons\\Spell_Shadow_Metamorphosis",
+    [267] = "Interface\\Icons\\Spell_Shadow_RainOfFire",
+    [71]  = "Interface\\Icons\\Ability_Warrior_DefensiveStance",
+    [72]  = "Interface\\Icons\\Ability_Warrior_Bladestorm",
+    [73]  = "Interface\\Icons\\Ability_Warrior_InnerRage",
+}
+
 local defaults = {
     classIconMode = "SPEC",
     classIconGloss = false,
@@ -516,7 +549,7 @@ function ClassIcon:SetClassIcon(_, unit)
         left, right, top, bottom = 0, 1, 0, 1
         needs_crop = true
     elseif self.db[unit].classIconMode == "SPEC" and specID then
-        texture = GladiusEx.SPECIALIZATION_ICONS[specID]
+        texture = SPECIALIZATION_ICONS[specID]
         left, right, top, bottom = 0, 1, 0, 1
         needs_crop = true
     else

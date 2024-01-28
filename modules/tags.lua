@@ -980,21 +980,50 @@ end
 function Tags:GetBuiltinTags()
     return {
         ["name"] = function(unit)
-            return UnitName(unit) or unit
+            local spectate = GladiusEx:GetModule("Spectate", true)
+			local isSpectating = spectate and spectate:IsSpectating() and not GladiusEx:IsArenaUnit(unit) or false
+			
+			if isSpectating then
+				local unitData = spectate:GetUnitByID(unit)
+				return (unitData and unitData.name) and unitData.name or unit
+			end
+			
+			return UnitName(unit) or unit
         end,
         ["name:status"] = function(unit)
-            if not UnitExists(unit) then
+			local spectate = GladiusEx:GetModule("Spectate", true)
+			local isSpectating = spectate and spectate:IsSpectating() and not GladiusEx:IsArenaUnit(unit) or false
+			local unitData = isSpectating and spectate:GetUnitByID(unit) or nil
+			
+            if (isSpectating and not unitData) or (not isSpectating and not UnitExists(unit)) then
                 return unit
-            elseif not UnitIsConnected(unit) then
+            elseif not isSpectating and not UnitIsConnected(unit) then
                 return L["OFFLINE"]
-            elseif UnitIsDeadOrGhost(unit) then
+            elseif (isSpectating and unitData and unitData.state == "DEAD") or (not isSpectating and UnitIsDeadOrGhost(unit)) then
                 return L["DEAD"]
             else
-                return UnitName(unit) or unit
+				if isSpectating then
+					return (unitData and unitData.name) and unitData.name or unit
+				end
+				
+				return UnitName(unit) or unit
             end
         end,
         ["class"] = function(unit)
-            return not GladiusEx:IsTesting(unit) and UnitClass(unit) or LOCALIZED_CLASS_NAMES_MALE[GladiusEx.testing[unit].unitClass]
+			local spectate = GladiusEx:GetModule("Spectate", true)
+			local isSpectating = (spectate and spectate:IsSpectating()) and not GladiusEx:IsArenaUnit(unit) or false
+
+			if GladiusEx:IsTesting(unit) or isSpectating then
+				local unitData = isSpectating and spectate:GetUnitByID(unit) or nil
+
+				local className = unitData and (spectate:GetClassInfo(unitData.classID) or "") or GladiusEx.testing[unit].unitClass or ""
+				local localName = className ~= "" and LOCALIZED_CLASS_NAMES_MALE[className] or className
+
+				return localName
+			end
+		
+		
+            return GladiusEx.buttons[unit].class or ""
         end,
         ["class:short"] = function(unit)
             return not GladiusEx:IsTesting(unit) and L[(select(2, UnitClass(unit)) or GladiusEx.buttons[unit].class or "") .. ":short"] or L[GladiusEx.testing[unit].unitClass .. ":short"]

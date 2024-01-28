@@ -30,74 +30,7 @@ local party_units = {
     ["party4"] = true,
 }
 
-local SPECIALIZATION_ICONS = {
-    [250] = "Interface\\Icons\\Spell_Deathknight_BloodPresence",
-    [251] = "Interface\\Icons\\Spell_Deathknight_FrostPresence",
-    [252] = "Interface\\Icons\\Spell_Deathknight_UnholyPresence",
-    [102] = "Interface\\Icons\\Spell_Nature_StarFall",
-    [103] = "Interface\\Icons\\Ability_Druid_CatForm",
-    [105] = "Interface\\Icons\\Spell_Nature_HealingTouch",
-    [253] = "Interface\\Icons\\Ability_Hunter_BeastTaming",
-    [254] = "Interface\\Icons\\Ability_Marksmanship",
-    [255] = "Interface\\Icons\\Ability_Hunter_SwiftStrike",
-    [62]  = "Interface\\Icons\\Spell_Holy_MagicalSentry",
-    [63]  = "Interface\\Icons\\Spell_Fire_FlameBolt",
-    [64]  = "Interface\\Icons\\Spell_Frost_FrostBolt02",
-    [65]  = "Interface\\Icons\\Spell_Holy_HolyBolt",
-    [66]  = "Interface\\Icons\\Spell_Holy_DevotionAura",
-    [70]  = "Interface\\Icons\\Spell_Holy_AuraOfLight",
-    [256] = "Interface\\Icons\\Spell_Holy_WordFortitude",
-    [257] = "Interface\\Icons\\Spell_Holy_GuardianSpirit",
-    [258] = "Interface\\Icons\\Spell_Shadow_ShadowWordPain",
-    [259] = "Interface\\Icons\\Ability_Rogue_ShadowStrikes",
-    [260] = "Interface\\Icons\\Ability_BackStab",
-    [261] = "Interface\\Icons\\Ability_Stealth",
-    [262] = "Interface\\Icons\\Spell_Nature_Lightning",
-    [263] = "Interface\\Icons\\Spell_Nature_LightningShield",
-    [264] = "Interface\\Icons\\Spell_Nature_MagicImmunity",
-    [265] = "Interface\\Icons\\Spell_Shadow_DeathCoil",
-    [266] = "Interface\\Icons\\Spell_Shadow_Metamorphosis",
-    [267] = "Interface\\Icons\\Spell_Shadow_RainOfFire",
-    [71]  = "Interface\\Icons\\Ability_Warrior_DefensiveStance",
-    [72]  = "Interface\\Icons\\Ability_Warrior_Bladestorm",
-    [73]  = "Interface\\Icons\\Ability_Warrior_InnerRage",
-}
-GladiusEx.SPECIALIZATION_ICONS = SPECIALIZATION_ICONS
 
-local specNameToID = {
-    ["Blood"] = 250,
-    ["Frost"] = 251,
-    ["Unholy"] = 252,
-    ["Havoc"] = 577,
-    ["Vengeance"] = 581,
-    ["Balance"] = 102,
-    ["Feral"] = 103,
-    ["Restoration"] = 105,
-    ["Beast Mastery"] = 253,
-    ["Marksmanship"] = 254,
-    ["Survival"] = 255,
-    ["Arcane"] = 62,
-    ["Fire"] = 63,
-    ["Frost"] = 64,
-    ["Holy"] = 65,
-    ["Protection"] = 66,
-    ["Retribution"] = 70,
-    ["Discipline"] = 256,
-    ["Holy"] = 257,
-    ["Shadow"] = 258,
-    ["Assassination"] = 259,
-    ["Combat"] = 260,
-    ["Subtlety"] = 261,
-    ["Elemental"] = 262,
-    ["Enhancement"] = 263,
-    ["Restoration"] = 264,
-    ["Affliction"] = 265,
-    ["Demonology"] = 266,
-    ["Destruction"] = 267,
-    ["Arms"] = 71,
-    ["Fury"] = 72,
-    ["Protection"] = 73
-}
 
 GladiusEx.party_units = party_units
 GladiusEx.arena_units = arena_units
@@ -424,7 +357,7 @@ function GladiusEx:OnEnable()
     
     -- this event works in all expansions from WotLK and forward
     self:RegisterEvent("ARENA_OPPONENT_UPDATE")
-    
+	
     -- spec detection
     self:RegisterEvent("UNIT_AURA")    
     self:RegisterEvent("UNIT_SPELLCAST_START")
@@ -513,11 +446,18 @@ function GladiusEx:GetArenaSize(min_size)
         return self:IsTesting()
     end
 
-    -- if this is nil we either have not started or we are spectating
+    -- if this is nil/0 we either have not started or we are spectating
     local alwaysUpPlayers = self:GetAlwaysUpFrameForPlayers()
     
+    local seen_enemy_units = 0
+	for i = 1, 5 do
+	if UnitExists("arena"..i) then
+	    seen_enemy_units = seen_enemy_units + 1
+	    end
+	end
+    
     -- try to guess the minimal possible (current) arena size
-    local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, GetNumPartyMembers()+1)
+    local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, GetNumPartyMembers() + 1, seen_enemy_units)
 
     log("GetArenaSize", min_size, self.seenPlayers, GetNumPartyMembers(),
         " => ", min_possible_size)
@@ -579,6 +519,13 @@ function GladiusEx:UpdatePartyFrames()
     log("UpdatePartyFrames", group_members)
     self:UpdateAnchor("party")
 
+	local seen_enemy_units = 0
+	for i = 1,5 do
+	if UnitExists("arena"..i) then
+	    seen_enemy_units = seen_enemy_units + 1
+	    end
+	end
+
     for i = 1, 5 do
         local unit = i == 1 and "player" or ("party" .. (i - 1))
         if group_members >= i then
@@ -601,7 +548,9 @@ function GladiusEx:UpdatePartyFrames()
             self:HideUnit(unit)
         end
     end
-    if self.db.base.hideSelf then
+	
+	local spectate = self:GetModule("Spectate", true)
+    if self.db.base.hideSelf and not (spectate and spectate:IsSpectating()) then
         self:HideUnit("player")
     end
 
@@ -643,7 +592,8 @@ end
 function GladiusEx:UpdateFrames()
     log("UpdateFrames")
 
-    if not self:IsPartyShown() and not self:IsArenaShown() then return end
+	local spectate = self:GetModule("Spectate", true)
+    if (not self:IsPartyShown() or (spectate and not spectate:IsSpectating())) and not self:IsArenaShown() then return end
 
     if not self.arena_size then
         self:CheckArenaSize()
@@ -710,9 +660,10 @@ function GladiusEx:HideFrames()
 
     self.arena_parent:Hide()
     self.party_parent:Hide()
-    self.arena_size = nil
-    self.knownSpecs = nil
-    self.seenPlayers = nil
+	
+	self.arena_size = nil
+	self.knownSpecs = nil
+	self.seenPlayers = nil
 end
 
 function GladiusEx:IsPartyShown()
@@ -730,17 +681,11 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
     if instanceType == "arena" then
         self:SetTesting(false)
         
-        self:ShowFrames()
         log("ENABLE LOGGING")
         
-        -- This will call CheckArenaSize and then iterate over all party members / enemies based on self.arena_size
-        -- performing the same activities as ARENA_OPPONENT_UPDATE for each unit
-        self:UpdateFrames()
+		self:ShowFrames()
         
-        local seen = self:GetAlwaysUpFrameForPlayers()
-        if seen and seen == 0 then -- Spectating (text shows "0 Players Remaining")
-            self:StartSpectate()
-        elseif not UnitAura("player", "Arena Preparation") then -- Inside (started)
+        if not UnitAura("player", "Arena Preparation") then -- Inside (started)
             -- game is already started, try to identify spec and classes immediately
             self:ReloadFixTrackClassesSpecs()
         end
@@ -750,7 +695,16 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         self:RegisterEvent("UNIT_AURA")
         self:RegisterEvent("UNIT_SPELLCAST_START")
         self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+
+        -- This will call CheckArenaSize and then iterate over all party members / enemies based on self.arena_size
+        -- performing the same activities as ARENA_OPPONENT_UPDATE for each unit
+        self:UpdateFrames()
     else
+		local spectate = self:GetModule("Spectate", true)
+		if spectate and spectate:IsSpectating() then
+			spectate:StopSpectate()
+		end
+		
         self:CheckFirstRun()
 
         if not self:IsTesting() then
@@ -758,11 +712,6 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         end
         if logging then log("DISABLE LOGGING") end
     end
-end
-
-function GladiusEx:StartSpectate()
-    self.spectating = true
-    -- do something to set the buttons for party frames to arena
 end
 
 function GladiusEx:ReloadFixTrackClassesSpecs(msg)
@@ -941,6 +890,8 @@ function GladiusEx:UpdateUnitGUID(event, unit)
         end
         -- add guid
         local guid = UnitGUID(unit)
+        guid = guid and guid or unit -- fix for Spectator mode (in which case unit would be a guid itself)
+        
         if guid then
             guid_to_unitid[guid] = unit
         end
@@ -1149,7 +1100,7 @@ function GladiusEx:CreateUnit(unit)
     -- secure button
     button.secure = CreateFrame("Button", "GladiusExSecureButton" .. unit, button, "SecureActionButtonTemplate")
     button.secure:SetAllPoints()
-    button.secure:SetAttribute("unit", unit)
+    button.secure:SetAttribute("unit", unit) -- TODO: Need to fix this to make it target the spectated unit by /targetexact unitName-server
     button.secure:RegisterForClicks("AnyDown")
     button.secure:SetAttribute("*type1", "target")
     button.secure:SetAttribute("*type2", "focus")
@@ -1508,7 +1459,9 @@ function GladiusEx:UpdateUnit(unit)
     self:UpdateUnitPosition(unit)
 
     -- show the secure frame
-    if self:IsTesting() and not self.db.base.locked then
+	
+	local spectate = self:GetModule("Spectate", true)
+    if (self:IsTesting() and not self.db.base.locked) or (spectate and spectate:IsSpectating()) then
         button.secure:Hide()
     else
         button.secure:Show()

@@ -97,6 +97,7 @@ L["TargetBar"] = "Target"
 L["PetBar"] = "Pet"
 L["SkillHistory"] = "Skill History"
 L["InterruptsEx"] = "Interrupts"
+L["Spectate"] = "Spectate"
 
 L["The Arena battle has begun!"] = "The Arena battle has begun!"
 L["Show arena frames"] = true
