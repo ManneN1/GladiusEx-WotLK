@@ -12,7 +12,7 @@ localization\locales.lua
 GladiusEx.lua
 
 options.lua
-speclist.lua
+Data.lua
 
 modules\alerts.lua
 modules\announcements.lua
