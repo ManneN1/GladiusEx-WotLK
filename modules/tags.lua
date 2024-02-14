@@ -4,51 +4,26 @@ local L = LibStub("AceLocale-3.0"):GetLocale("GladiusEx")
 local LSM = LibStub("LibSharedMedia-3.0")
 
 
-local specIDToName = {
-    [250] = "Blood",
-    [251] = "Frost",
-    [252] = "Unholy",
-    [102] = "Balance",
-    [103] = "Feral",
-    [105] = "Restoration",
-    [253] = "Beast Mastery",
-    [254] = "Marksmanship",
-    [255] = "Survival",
-    [62] = "Arcane",
-    [63] = "Fire",
-    [64] = "Frost",
-    [65] = "Holy",
-    [66] = "Protection",
-    [70] = "Retribution",
-    [256] = "Discipline",
-    [257] = "Holy",
-    [258] = "Shadow",
-    [259] = "Assassination",
-    [260] = "Combat",
-    [261] = "Subtlety",
-    [262] = "Elemental",
-    [263] = "Enhancement",
-    [264] = "Restoration",
-    [265] = "Affliction",
-    [266] = "Demonology",
-    [267] = "Destruction",
-    [71] = "Arms",
-    [72] = "Fury",
-    [73] = "Protection"
-}
-
-
 -- global functions
 local strfind, strgsub, strgmatch, strformat = string.find, string.gsub, string.gmatch, string.format
 local tinsert = table.insert
 local pairs, select = pairs, select
 
-local UnitName, UnitIsDeadOrGhost, LOCALIZED_CLASS_NAMES_MALE = UnitName, UnitIsDeadOrGhost, LOCALIZED_CLASS_NAMES_MALE
-local UnitClass, UnitRace = UnitClass, UnitRace
-local UnitHealth, UnitHealthMax = UnitHealth, UnitHealthMax
-local UnitPower, UnitPowerMax = UnitPower, UnitPowerMax
+local Spectate = GladiusEx:GetModule("Spectate", true)
+
+local UnitName = Spectate and Spectate.UnitName or UnitName 
+local UnitIsDeadOrGhost = Spectate and Spectate.UnitIsDeadOrGhost or UnitIsDeadOrGhost
+local UnitClass = Spectate and Spectate.UnitClass or UnitClass
+local UnitRace =  Spectate and Spectate.UnitRace or UnitRace
+local UnitHealth = Spectate and Spectate.UnitHealth or UnitHealth
+local UnitHealthMax = Spectate and Spectate.UnitHealthMax or UnitHealthMax
+local UnitPower = Spectate and Spectate.UnitPower or UnitPower
+local UnitPowerMax = Spectate and Spectate.UnitPowerMax or UnitPowerMax
+local UnitExists = Spectate and Spectate.UnitExists or UnitExists
+local UnitIsConnected = Spectate and Spectate.UnitIsConnected or UnitIsConnected
+
 local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
-local UnitExists, UnitIsConnected = UnitExists, UnitIsConnected
+LOCALIZED_CLASS_NAMES_MALE = LOCALIZED_CLASS_NAMES_MALE
 
 local Tags = GladiusEx:NewGladiusExModule("Tags", {
     tags = {},
@@ -980,50 +955,21 @@ end
 function Tags:GetBuiltinTags()
     return {
         ["name"] = function(unit)
-            local spectate = GladiusEx:GetModule("Spectate", true)
-			local isSpectating = spectate and spectate:IsSpectating() and not GladiusEx:IsArenaUnit(unit) or false
-			
-			if isSpectating then
-				local unitData = spectate:GetUnitByID(unit)
-				return (unitData and unitData.name) and unitData.name or unit
-			end
-			
-			return UnitName(unit) or unit
+            return UnitName(unit) or unit
         end,
         ["name:status"] = function(unit)
-			local spectate = GladiusEx:GetModule("Spectate", true)
-			local isSpectating = spectate and spectate:IsSpectating() and not GladiusEx:IsArenaUnit(unit) or false
-			local unitData = isSpectating and spectate:GetUnitByID(unit) or nil
-			
-            if (isSpectating and not unitData) or (not isSpectating and not UnitExists(unit)) then
+            if not UnitExists(unit) then
                 return unit
-            elseif not isSpectating and not UnitIsConnected(unit) then
+            elseif not UnitIsConnected(unit) then
                 return L["OFFLINE"]
-            elseif (isSpectating and unitData and unitData.state == "DEAD") or (not isSpectating and UnitIsDeadOrGhost(unit)) then
+            elseif UnitIsDeadOrGhost(unit) then
                 return L["DEAD"]
             else
-				if isSpectating then
-					return (unitData and unitData.name) and unitData.name or unit
-				end
-				
-				return UnitName(unit) or unit
+                return UnitName(unit) or unit
             end
         end,
         ["class"] = function(unit)
-			local spectate = GladiusEx:GetModule("Spectate", true)
-			local isSpectating = (spectate and spectate:IsSpectating()) and not GladiusEx:IsArenaUnit(unit) or false
-
-			if GladiusEx:IsTesting(unit) or isSpectating then
-				local unitData = isSpectating and spectate:GetUnitByID(unit) or nil
-
-				local className = unitData and (spectate:GetClassInfo(unitData.classID) or "") or GladiusEx.testing[unit].unitClass or ""
-				local localName = className ~= "" and LOCALIZED_CLASS_NAMES_MALE[className] or className
-
-				return localName
-			end
-		
-		
-            return GladiusEx.buttons[unit].class or ""
+            return not GladiusEx:IsTesting(unit) and UnitClass(unit) or LOCALIZED_CLASS_NAMES_MALE[GladiusEx.testing[unit].unitClass]
         end,
         ["class:short"] = function(unit)
             return not GladiusEx:IsTesting(unit) and L[(select(2, UnitClass(unit)) or GladiusEx.buttons[unit].class or "") .. ":short"] or L[GladiusEx.testing[unit].unitClass .. ":short"]
@@ -1036,7 +982,7 @@ function Tags:GetBuiltinTags()
             if not specID or specID == 0 then
                 return ""
             end
-            return specIDToName[specID]
+            return GladiusEx.specIDToName[specID]
         end,
         ["spec:short"] = function(unit)
             local specID = GladiusEx:IsTesting(unit) and GladiusEx.testing[unit].specID or GladiusEx.buttons[unit].specID or 0
@@ -1106,8 +1052,7 @@ function Tags:GetBuiltinTags()
             return not GladiusEx:IsTesting(unit) and UnitPowerMax(unit) or GladiusEx.testing[unit].maxPower
         end,
         ["power:short"] = function(unit)
-            local power = not GladiusEx:IsTesting(unit) and UnitPower(unit) or GladiusEx.testing[unit].power
-            if unit == "player" then power = UnitPower(unit) end
+            local power = not GladiusEx:IsTesting(unit) and UnitPower(unit) or (unit == "player" and UnitPower(unit) or GladiusEx.testing[unit].power)
             if (power > 999) then
                 return strformat("%.1fk", (power / 1000))
             else
@@ -1140,11 +1085,11 @@ end
 
 function Tags:GetBuiltinTagsEvents()
     return {
-        ["name"] = "",
+        ["name"] = "UNIT_NAME_UPDATE",
         ["name:status"] = "UNIT_HEALTH",
         ["class"] = "",
         ["class:short"] = "",
-        ["race"] = "",
+        ["race"] = "UNIT_NAME_UPDATE",
         ["spec"] = "GLADIUSEX_SPEC_UPDATE",
         ["spec:short"] = "GLADIUSEX_SPEC_UPDATE",
 
