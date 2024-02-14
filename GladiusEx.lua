@@ -10,7 +10,7 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local select, type, pairs, tonumber, wipe = select, type, pairs, tonumber, wipe
 local strfind, strmatch = string.find, string.match
 local max, abs, floor, ceil = math.max, math.abs, math.floor, math.ceil
-local UnitIsDeadOrGhost, UnitGUID, UnitExists = UnitIsDeadOrGhost, UnitGUID, UnitExists
+local UnitIsDeadOrGhost, UnitGUID, UnitExists, UnitClass, UnitAura, UnitCastingInfo, UnitChannelInfo
 local InCombatLockdown = InCombatLockdown
 local GetNumArenaOpponents, GetNumPartyMembers = GetNumArenaOpponents, GetNumPartyMembers
 
@@ -248,6 +248,19 @@ function GladiusEx:OnInitialize()
                 return self.db.base.testUnits[k]
             end
         })
+    
+    -- set up references to Spectate.functions if we have the spectate module installed
+    local spectate = self:GetModule("Spectate", true)
+    
+    UnitIsDeadOrGhost = spectate and spectate.UnitIsDeadOrGhost or UnitIsDeadOrGhost
+    UnitGUID = spectate and spectate.UnitGUID or UnitGUID
+    UnitExists = spectate and spectate.UnitExists or UnitExists
+    UnitClass = spectate and spectate.UnitClass or UnitClass
+    UnitAura = spectate and spectate.UnitAura or UnitAura
+    UnitChannelInfo = spectate and spectate.UnitChannelInfo or UnitChannelInfo
+    UnitCastingInfo = spectate and spectate.UnitCastingInfo or UnitCastingInfo
+    -- UnitPowerType = spectate and spectate.UnitPowerType or UnitPowerType
+    -- UnitPower = spectate and spectate.UnitPower or UnitPower
         
     -- spec detection
     self.specSpells = self:GetSpecList()
@@ -361,6 +374,7 @@ function GladiusEx:OnEnable()
     -- spec detection
     self:RegisterEvent("UNIT_AURA")    
     self:RegisterEvent("UNIT_SPELLCAST_START")
+    self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     
     self:RegisterEvent("UNIT_NAME_UPDATE")
@@ -440,6 +454,12 @@ function GladiusEx:IsTesting(unit)
     end
 end
 
+function GladiusEx:IsSpectating()
+	local m = self:GetModule("Spectate", true)
+	
+	return m and m:IsSpectating() or false
+end
+
 function GladiusEx:GetArenaSize(min_size)
     if self:IsTesting() then
         log("GetArenaSize => testing")
@@ -457,7 +477,7 @@ function GladiusEx:GetArenaSize(min_size)
 	end
     
     -- try to guess the minimal possible (current) arena size
-    local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, GetNumPartyMembers() + 1, seen_enemy_units)
+    local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, GladiusEx:IsSpectating() and 1 or (GetNumPartyMembers() + 1), seen_enemy_units)
 
     log("GetArenaSize", min_size, self.seenPlayers, GetNumPartyMembers(),
         " => ", min_possible_size)
@@ -549,8 +569,7 @@ function GladiusEx:UpdatePartyFrames()
         end
     end
 	
-	local spectate = self:GetModule("Spectate", true)
-    if self.db.base.hideSelf and not (spectate and spectate:IsSpectating()) then
+    if self.db.base.hideSelf and not self:IsSpectating() then
         self:HideUnit("player")
     end
 
@@ -694,6 +713,7 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         -- monitor for class/spec
         self:RegisterEvent("UNIT_AURA")
         self:RegisterEvent("UNIT_SPELLCAST_START")
+        self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
         self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 
         -- This will call CheckArenaSize and then iterate over all party members / enemies based on self.arena_size
@@ -750,7 +770,7 @@ function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
 end
 
 function GladiusEx:IdentifyUnitClass(unit, skipRefresh)
-    if self.buttons[unit] and not self.buttons[unit].class and UnitClass(unit) then
+    if self.buttons[unit] and not self.buttons[unit].class and UnitExists(unit) and UnitClass(unit) then
         self.buttons[unit].class = select(2, UnitClass(unit))
         
         if not skipRefresh then
@@ -765,6 +785,7 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
     if self.knownSpecs and self.arena_size and self.knownSpecs == self.arena_size * 2 and not self:IsTesting() then
         self:UnregisterEvent("UNIT_AURA")
         self:UnregisterEvent("UNIT_SPELLCAST_START")
+        self:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
         self:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
         return
     end
@@ -773,23 +794,36 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
     
     if (self.buttons[unit].specID == nil) then
         if name then
+            if type(name) == "number" then
+                name = self:SafeGetSpellName(name)
+            end
             specID = self.specSpells[name]
-        --elseif UnitIsUnit(unit, "player") then
+
+        --elseif UnitIsUnit(unit, "player") and not self:IsSpectating() then
         --   specname = self:IdentifyPlayerSpecialization()
+        
         else
             for index = 1, 40 do
-                local  name, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
+                local  auraName, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
                 
-                if not name then break end
+                if not auraName then break end
                 
-                self:IdentifyUnitSpecialization(unitCaster, name)
+                if not specID and unitCaster == unit then
+                    specID = self.specSpells[auraName]
+                    name = auraName
+                    if specID then
+                        break
+                    end
+                else
+                    self:IdentifyUnitSpecialization(unitCaster, auraName)
+                end
             end
         end
 
         if specID and self.buttons[unit] then
-             self.buttons[unit].specID = specID
-             self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
-             self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
+            self.buttons[unit].specID = specID
+            self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
+            self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
         end     
     end
 end
@@ -808,26 +842,31 @@ function GladiusEx:IdentifyPlayerSpecialization()
 end
 
 function GladiusEx:UNIT_AURA(event, unit)
-    if not (self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+    if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
     
     self:IdentifyUnitClass(unit)
     self:IdentifyUnitSpecialization(unit)
 end
 
-function GladiusEx:UNIT_SPELLCAST_SUCCEEDED(event, unit, name)
-    if (not self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+function GladiusEx:UNIT_SPELLCAST_SUCCEEDED(event, unit, spellID)
+    if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
 
     self:IdentifyUnitClass(unit)
-    self:IdentifyUnitSpecialization(unit, name)
+    self:IdentifyUnitSpecialization(unit, spellID)
 end
 
 function GladiusEx:UNIT_SPELLCAST_START(event, unit)
-    if (not self:IsArenaUnit(unit) or self:IsPartyUnit(unit)) then return end
+    if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
 
     self:IdentifyUnitClass(unit)  
        
-    local name = UnitCastingInfo(unit)   
+    local name = UnitCastingInfo(unit) and UnitCastingInfo(unit) or UnitChannelInfo(unit)
+    
     self:IdentifyUnitSpecialization(unit, name)
+end
+
+function GladiusEx:UNIT_SPELLCAST_CHANNEL_START(event, unit)
+    self:UNIT_SPELLCAST_START(event, unit)
 end
 
 function GladiusEx:PARTY_MEMBERS_CHANGED()
@@ -926,7 +965,7 @@ local function FrameRangeChecker_OnUpdate(f, elapsed)
             return
         end
 
-        if range_check(unit) then
+        if GladiusEx:IsSpectating() or range_check(unit) then
             f:SetAlpha(1)
         else
             f:SetAlpha(GladiusEx.db[unit].oorAlpha)
@@ -1460,8 +1499,7 @@ function GladiusEx:UpdateUnit(unit)
 
     -- show the secure frame
 	
-	local spectate = self:GetModule("Spectate", true)
-    if (self:IsTesting() and not self.db.base.locked) or (spectate and spectate:IsSpectating()) then
+    if (self:IsTesting() and not self.db.base.locked) or self:IsSpectating() then
         button.secure:Hide()
     else
         button.secure:Show()
