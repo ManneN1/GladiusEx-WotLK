@@ -14,16 +14,15 @@ local defaults = {
 
 local Interrupt = GladiusEx:NewGladiusExModule("InterruptsEx", defaults, defaults)
     
-INTERRUPTS = {
-    ["Pummel"] = {duration=4},                    -- [Warrior] Pummel
-    ["Avenger's Shield"] = {duration=3},          -- [Paladin] Avengers Shield
-    ["Kick"] = {duration=5},                    -- [Rogue] Kick
-    ["Mind Freeze"] = {duration=3},               -- [DK] Mind Freeze
-    ["Wind Shear"] = {duration=3},               -- [Shaman] Wind Shear
-    ["Optical Blast"] = {duration=6},              -- [Warlock] Optical Blast
-    ["Spell Lock"] = {duration=6},               -- [Warlock] Spell Lock
-    ["Counterspell"]             = {duration=6}, -- [Mage] Counterspell
-    ["Feral Charge - Bear"] = {duration=4}, -- [Feral] Skull Bash
+INTERRUPTS = {   
+    [6552]  = { duration = 4 }, -- [Warrior] Pummel
+    [48827] = { duration = 3 }, -- [Paladin] Avenger's Shield
+    [1766] = { duration = 5 }, -- [Rogue] Kick
+    [47528] = { duration = 3 }, -- [DK] Mind Freeze
+    [57994] = { duration = 3 }, -- [Shaman] Wind Shear
+    [19647] = { duration = 6 }, -- [Warlock] Spell Lock
+    [2139]  = { duration = 6 }, -- [Mage] Counterspell
+    [16979] = { duration = 4 }, -- [Feral] Feral Charge - Bear
 }
 
 function Interrupt:OnEnable()
@@ -45,8 +44,7 @@ end
 function Interrupt:COMBAT_LOG_EVENT_UNFILTERED(event, ...)
     local subEvent = select(2, ...)
     local destGUID = select(6, ...)
-    local name = select(10, ...)
-    local spellid = select(9, ...)
+    local spellID = select(9, ...)
 
     local unit = GladiusEx:GetUnitIdByGUID(destGUID)
     if not unit then return end
@@ -63,27 +61,27 @@ function Interrupt:COMBAT_LOG_EVENT_UNFILTERED(event, ...)
         return
     end
     
-    if INTERRUPTS[name] == nil then return end
-    local duration = INTERRUPTS[name].duration
+    if INTERRUPTS[spellID] == nil then return end
+    local duration = INTERRUPTS[spellID].duration
        if not duration then return end
 
 
-       self:UpdateInterrupt(unit, name, duration)
+       self:UpdateInterrupt(unit, spellID, duration)
        
 end
 
-function Interrupt:UpdateInterrupt(unit, name, duration)
+function Interrupt:UpdateInterrupt(unit, spellID, duration)
     local t = GetTime()
 
     -- new interrupt
-    if name and duration then
+    if spellID and duration then
         if self.interrupts[unit] == nil then self.interrupts[unit] = {} end
-        self.interrupts[unit][name] = {started = t, duration = duration}
+        self.interrupts[unit][spellID] = {started = t, duration = duration}
     -- old interrupt expiring
-    elseif name and duration == nil then
-        if self.interrupts[unit] and self.interrupts[unit][name] and
-                t > self.interrupts[unit][name].started + self.interrupts[unit][name].duration then
-            self.interrupts[unit][name] = nil
+    elseif spellID and duration == nil then
+        if self.interrupts[unit] and self.interrupts[unit][spellID] and
+                t > self.interrupts[unit][spellID].started + self.interrupts[unit][spellID].duration then
+            self.interrupts[unit][spellID] = nil
         end
     end
     
@@ -93,7 +91,7 @@ function Interrupt:UpdateInterrupt(unit, name, duration)
     
     -- K: Clears the interrupt after end of duration
     if duration then
-        GladiusEx:ScheduleTimer(self.UpdateInterrupt, duration+0.1, self, unit, name)
+        GladiusEx:ScheduleTimer(self.UpdateInterrupt, duration+0.1, self, unit, spellID)
     end
 end
 
@@ -101,24 +99,24 @@ function Interrupt:GetInterruptFor(unit)
     local interrupts = self.interrupts[unit]
     if interrupts == nil then return end
     
-    local name, icon, duration, endsAt
+    local aSpellID, icon, duration, endsAt
     
-    -- iterate over all interrupt spellids to find the one of highest duration
-    for iname, intdata in pairs(interrupts) do
+    -- iterate over all interrupt spellIDs to find the one of highest duration
+    for spellID, intdata in pairs(interrupts) do
         local tmpstartedAt = intdata.started
         local dur = intdata.duration
         local tmpendsAt = tmpstartedAt + dur
         if GetTime() > tmpendsAt then
-            self.interrupts[unit][iname] = nil
+            self.interrupts[unit][spellID] = nil
         elseif endsAt == nil or tmpendsAt > endsAt then
             endsAt = tmpendsAt
             duration = dur
-            name, _, icon = GetSpellInfo(iname)
+            aSpellID, _, icon = GetSpellInfo(spellID)
         end
     end
     
-    if name then
-        return name, icon, duration, endsAt, self.db[unit].interruptPrio
+    if aSpellID then
+        return aSpellID, icon, duration, endsAt, self.db[unit].interruptPrio
     end
 end
 
