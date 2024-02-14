@@ -15,6 +15,7 @@ GladiusEx.defaults = {
         showArena = true,
         hideSelf = false,
         superFS = true,
+        specManaLimit = 15000,
         testUnits = {
             ["arena1"] = { health = 350000, maxHealth = 350000, power = 180000, maxPower = 300000, powerType = 0, unitClass = "MAGE", unitRace = "Scourge", specID = 64 },
             ["arena2"] = { health = 275000, maxHealth = 320000, power = 10, maxPower = 100, powerType = 2, unitClass = "HUNTER", unitRace = "NightElf", specID = 253 },
@@ -507,6 +508,20 @@ function GladiusEx:SetupOptions()
                                 name = L["Advanced options"],
                                 desc = L["Toggle display of advanced options"],
                                 order = 15,
+                            },
+                            specManaLimit = {
+                                type = "range",
+                                name = "Mana Specialization Limit",
+                                desc = "This limit will be used to determine whether a Shaman is Enhancement, a Paladin is Holy (etc)",
+                                min = 0,
+                                max = 300000,
+                                step = 100,
+                                set = function(info, value)
+                                    setOption(info, value)
+                                    GladiusEx:RefreshFrames()
+                                end,
+                                hidden = function() return not self.db.base.advancedOptions end,
+                                order = 16,
                             },
                         },
                     },

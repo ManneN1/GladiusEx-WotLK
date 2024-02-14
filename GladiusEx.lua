@@ -229,7 +229,7 @@ function GladiusEx:OnInitialize()
             elseif k == "base" then
                 v = self.dbi.profile
             else
-                error("Bad DB usage: not an unit (" .. tostring(k) .. ")", 2)
+                error("Bad DB usage: not a unit (" .. tostring(k) .. ")", 2)
             end
             rawset(t, k, v)
             return v
@@ -803,8 +803,21 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
 
         --elseif UnitIsUnit(unit, "player") and not self:IsSpectating() then
         --   specname = self:IdentifyPlayerSpecialization()
-        
         else
+            local _, class = UnitClass(unit)
+            if class and UnitPowerType(unit) == 0 then
+                local p = UnitPowerMax(unit)
+                local limit = self.db.base.specManaLimit
+                if p > 2 then -- 0 if not exists and 1 if spectate
+                    if class == "PALADIN" and p > limit then
+                        specID = 65 -- Holy
+                    elseif class == "DRUID" and p < limit then
+                        specID = 103 -- Feral
+                    elseif class == "SHAMAN" and p < limit then
+                        specID = 263 -- Enhancement
+                    end
+                end
+            end
             for index = 1, 40 do
                 local  auraName, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
                 

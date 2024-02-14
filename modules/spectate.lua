@@ -401,7 +401,7 @@ function Spectate:UNIT_TARGET(event, unit, recursive)
     if UnitExists(target) then
         self:CheckUnitRace(target)
         self:CheckUnitName(target)
-        self:CheckPowerType(target)
+        self:CheckUnitPower(target)
         self:CheckUnitClass(target)
         self:CheckUnitHealth(target)
     end
@@ -511,6 +511,18 @@ function Spectate:CheckUnitHealth(unit)
     self:SetUnitMaxHP(actual_unit, UnitHealthMax(unit))
     self:SetUnitCurrentHP(actual_unit, UnitHealth(unit))
 end
+
+function Spectate:CheckUnitPower(unit)
+    local guid = UnitGUID(unit)
+    
+    local actual_unit = self:GetUnitByID(guid)
+    if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].maxPower then return end
+    
+    self:SetUnitPowerType(actual_unit, UnitPowerType(unit))
+    self:SetUnitMaxPower(actual_unit, UnitPowerMax(unit))
+    self:SetUnitCurrentPower(actual_unit, UnitPower(unit))
+end
+
 
 -- SETTERS & ACTIVATORS
 
@@ -1298,7 +1310,7 @@ function Spectate.UnitPowerMax(unit)
 
 	if not Spectate.units or not Spectate.units[unit] then return 1 end
 	
-	return Spectate.units[unit].maxPower or 1
+	return Spectate.units[unit].maxPower
 end
 
 function Spectate.UnitCastingInfo(unit)
