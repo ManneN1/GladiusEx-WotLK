@@ -1,5 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
+    <Include file="libs\AceTimer-3.0\AceTimer-3.0.xml"/>
 	<Script file="cooldowns_spelldata.lua"/>
 	<Script file="cooldowns_deathknight.lua"/>
 	<Script file="cooldowns_druid.lua"/>

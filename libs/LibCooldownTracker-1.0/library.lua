@@ -24,6 +24,7 @@ local GetTime, UnitGUID, IsInInstance = GetTime, UnitGUID, IsInInstance
 
 lib.frame = lib.frame or CreateFrame("Frame")
 lib.callbacks = lib.callbacks or LibStub("CallbackHandler-1.0"):New(lib)
+lib.timers = lib.timers or LibStub("AceTimer-3.0"):Embed(lib)
 
 -- init event handler
 local events = {}
@@ -179,7 +180,7 @@ local function AddCharge(unit, spellid)
 	end
 end
 
-local function CooldownEvent(event, unit, spellid)
+function lib:CooldownEvent(event, unit, spellid, isGUID)
 	local spelldata = SpellData[spellid]
 	if not spelldata then return end
 
@@ -188,7 +189,7 @@ local function CooldownEvent(event, unit, spellid)
 		spelldata = SpellData[spelldata]
 	end
 
-	if lib:IsUnitRegistered(unit) then
+	if isGUID or lib:IsUnitRegistered(unit) then
 		local now = GetTime()
 
 		if not lib.tracked_players[unit] then
@@ -321,10 +322,27 @@ local function CooldownEvent(event, unit, spellid)
                 end
 			end
 		end
-
-		lib.callbacks:Fire("LCT_CooldownUsed", unit, spellid, used_start, used_end, cooldown_start)
+            
+        
+        if isGUID then
+            if tpu.timer then
+                lib.timers:CancelTimer(tpu.timer)
+            end
+            tpu.timer = lib.timers:ScheduleTimer(lib.RemoveData, 600, lib, unit)
+        end
+        lib.callbacks:Fire("LCT_CooldownUsed", unit, spellid, used_start, used_end, cooldown_start, isGUID)
 	end
 end
+
+function lib:RemoveData(guid)
+    local tpu = lib.tracked_players[guid]
+    
+    if tpu then
+        lib.tracked_players[guid] = nil
+    end
+end
+
+
 
 local function enable()
 	lib.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -517,6 +535,11 @@ function events:PLAYER_ENTERING_WORLD()
 	if instanceType == "arena" then
 		ClearTimers()
 		for unit in pairs(lib.tracked_players) do
+            local timer = lib.tracked_players[unit].timer
+            if timer then
+                lib.timers:CancelTimer(timer)
+            end    
+
 			lib.tracked_players[unit] = nil
 			lib.callbacks:Fire("LCT_CooldownsReset", unit)
 		end
@@ -524,14 +547,13 @@ function events:PLAYER_ENTERING_WORLD()
 end
 
 function events:UNIT_SPELLCAST_SUCCEEDED(event, unit, spellName, rank, lineID, spellId)
-	CooldownEvent(event, unit, spellId)
+	lib:CooldownEvent(event, unit, spellId)
 end
 
 function events:COMBAT_LOG_EVENT_UNFILTERED(_, timestamp, event, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellId, spellName, spellSchool)
 
 	-- check unit
 	local unit = lib.guid_to_unitid[sourceGUID]
-	if not unit then return end
 
 	-- check spell
 	local spelldata = SpellData[spellId]
@@ -541,8 +563,12 @@ function events:COMBAT_LOG_EVENT_UNFILTERED(_, timestamp, event, sourceGUID, sou
 	   event == "SPELL_AURA_REMOVED" or
 	   event == "SPELL_AURA_APPLIED" or
 	   event == "SPELL_CAST_SUCCESS" then
-		CooldownEvent(event, unit, spellId)
-	end
+       
+        local isGUID = not unit and sourceGUID or false
+        unit = unit and unit or sourceGUID
+        
+        lib:CooldownEvent(event, unit, spellId, isGUID) 
+    end
 end
 
 function events:UNIT_NAME_UPDATE(event, unit)
