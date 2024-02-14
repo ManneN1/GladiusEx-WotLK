@@ -6,9 +6,16 @@ local LSM = LibStub("LibSharedMedia-3.0")
 -- upvalues
 local strfind = string.find
 local pairs, select, unpack = pairs, select, unpack
-local GetTime, SetPortraitTexture = GetTime, SetPortraitTexture
-local GetSpellInfo, UnitAura, UnitClass, UnitGUID, UnitBuff, UnitDebuff = GetSpellInfo, UnitAura, UnitClass, UnitGUID, UnitBuff, UnitDebuff
-local UnitIsVisible, UnitIsConnected = UnitIsVisible, UnitIsConnected
+local GetTime, SetPortraitTexture, GetSpellInfo = GetTime, SetPortraitTexture, GetSpellInfo
+
+local Spectate = GladiusEx:GetModule("Spectate", true)
+
+local UnitClass = Spectate and Spectate.UnitClass or UnitClass
+local UnitExists = Spectate and Spectate.UnitExists or UnitExists
+local UnitGUID = Spectate and Spectate.UnitGUID or UnitGUID
+local UnitAura = Spectate and Spectate.UnitAura or UnitAura
+local UnitIsVisible = Spectate and Spectate.UnitIsVisible or UnitIsVisible
+local UnitIsConnected = Spectate and Spectate.UnitIsConnected or UnitIsConnected
 
 
 
@@ -237,6 +244,7 @@ local function GetDefaultImportantAuras()
     }
 end
 
+
 local defaults = {
     classIconMode = "SPEC",
     classIconGloss = false,
@@ -260,7 +268,7 @@ function ClassIcon:OnEnable()
     self:RegisterEvent("UNIT_AURA")
     self:RegisterEvent("UNIT_PORTRAIT_UPDATE", "UNIT_AURA")
     self:RegisterEvent("UNIT_MODEL_CHANGED")
-    self:RegisterMessage("GLADIUSEX_SPEC_UPDATE", "SetClassIcon")
+    self:RegisterMessage("GLADIUSEX_SPEC_UPDATE", "UNIT_AURA")
     self:RegisterMessage("GLADIUSEX_INTERRUPT", "UNIT_AURA")
 
     if not self.frame then
@@ -337,10 +345,11 @@ end
 function ClassIcon:ScanAuras(unit)
     local best_priority = 0
     local best_name, best_icon, best_duration, best_expires
+    local t = GetTime()
 
     -- debuffs
     for index = 1, 40 do
-        local name,_, icon, _, _, duration, expires, _, _, _, spellid = UnitDebuff(unit, index)
+        local name,_, icon, _, _, duration, expires, _, _, _, spellid = UnitAura(unit, index, "HARMFUL")
         if not name then break end
         local prio = self:GetImportantAura(unit, name) or self:GetImportantAura(unit, spellid)
         if prio and prio > best_priority or (prio == best_priority and best_expires and expires > best_expires) then
@@ -350,7 +359,7 @@ function ClassIcon:ScanAuras(unit)
 
     -- buffs
     for index = 1, 40 do
-        local name,_, icon, _, _, duration, expires, _, _, _, spellid = UnitBuff(unit, index)
+        local name,_, icon, _, _, duration, expires, _, _, _, spellid = UnitAura(unit, index, "HELPFUL")
         if not name then break end
         local prio = self:GetImportantAura(unit, name) or self:GetImportantAura(unit, spellid)
         -- V: make sure we have a best_expires before comparing it
@@ -363,8 +372,10 @@ function ClassIcon:ScanAuras(unit)
     local interrupt = GladiusEx:GetModule("InterruptsEx", true)
     if interrupt then
         local name, icon, duration, expires, prio = interrupt:GetInterruptFor(unit)
-        if prio and prio > best_priority or (prio == best_priority and best_expires and expires > best_expires) then
-            best_name, best_icon, best_duration, best_expires, best_priority = name, icon, duration, expires, prio
+        if name then
+            if prio and prio > best_priority or (prio == best_priority and best_expires and expires > best_expires) then
+                best_name, best_icon, best_duration, best_expires, best_priority = name, icon, duration, expires, prio
+            end
         end
     end
     
@@ -384,9 +395,20 @@ function ClassIcon:UpdateAura(unit)
 end
 
 function ClassIcon:SetAura(unit, name, icon, duration, expires)
-    -- display aura
+    -- don't display the aura if we're already showing the same icon / expiration / duration (this causes a brief "glitch" to appear)
+    if self.frame[unit].icon and self.frame[unit].icon == icon and
+        ((not self.frame[unit].duration and not duration) or (self.frame[unit].duration and duration and self.frame[unit].duration == duration)) and
+        ((not self.frame[unit].expires and not expires) or (self.frame[unit].expires and expires and self.frame[unit].expires == expires)) then
+       return 
+    end
+    
+    self.frame[unit].icon = icon
+    self.frame[unit].duration = duration
+    self.frame[unit].expires = expires
+    
     self:SetTexture(unit, icon, true, 0, 1, 0, 1)
 
+    -- display aura
     if self.db[unit].classIconCooldown and duration ~= 0 then
         self.frame[unit].cooldown:SetCooldown(expires - duration, duration)
         self.frame[unit].cooldown:Show()
@@ -446,7 +468,7 @@ function ClassIcon:SetClassIcon(_, unit)
     -- hide cooldown frame
     self.frame[unit].cooldown:Hide()
 
-    if self.db[unit].classIconMode == "PORTRAIT2D" then
+    if self.db[unit].classIconMode == "PORTRAIT2D" and (GladiusEx:IsArenaUnit(unit) or not self:IsSpectating()) then
         -- portrait2d
         if not self.frame[unit].portrait2d then
             self.frame[unit].portrait2d = self.frame[unit]:CreateTexture(nil, "OVERLAY")
@@ -465,7 +487,7 @@ function ClassIcon:SetClassIcon(_, unit)
             self.frame[unit].texture:SetTexture(0, 0, 0, 1)
             return
         end
-    elseif self.db[unit].classIconMode == "PORTRAIT3D" then
+    elseif self.db[unit].classIconMode == "PORTRAIT3D" and (GladiusEx:IsArenaUnit(unit) or not self:IsSpectating()) then
         -- portrait3d
         local zoom = 1.0
         if not self.frame[unit].portrait3d then
@@ -495,8 +517,10 @@ function ClassIcon:SetClassIcon(_, unit)
 
     -- get unit class
     local class, specID
-    if not GladiusEx:IsTesting(unit) then
+
+    if not GladiusEx:IsTesting(unit) or GladiusEx:IsSpectating() then
         class = UnitExists(unit) and select(2, UnitClass(unit)) or nil
+        
         -- check for arena prep info
         if not class then
             class = GladiusEx.buttons[unit].class

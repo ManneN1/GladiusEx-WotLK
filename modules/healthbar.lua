@@ -6,7 +6,12 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local strfind = string.find
 local pairs = pairs
 local min = math.min
-local UnitHealth, UnitHealthMax, UnitClass = UnitHealth, UnitHealthMax, UnitClass
+
+local Spectate = GladiusEx:GetModule("Spectate", true)
+
+local UnitHealth = Spectate and Spectate.UnitHealth or UnitHealth
+local UnitHealthMax = Spectate and Spectate.UnitHealthMax or UnitHealthMax
+local UnitClass = Spectate and Spectate.UnitClass or UnitClass
 
 local HealthBar = GladiusEx:NewGladiusExModule("HealthBar", {
     healthBarAttachTo = "Frame",

@@ -15,6 +15,10 @@ L["cat:stun"] = "Stun"
 L["cat:immune"] = "Immune"
 L["cat:uncat"] = "Uncategorized"
 
+-- Spectate module
+L["Use Server Data to Track Auras"] = true
+L["Track friendly unit auras (buffs/debuffs) using the server spectator data (which is bugged and not working on most/many servers) instead of LibAuraInfo (which is also not perfect, and guesses auras based on COMBAT_LOG events and by polling the UnitAuras of the arena-targets). Requires UI reload."] = true
+
 -- Tags module
 L["WARRIOR:short"] = "Warr"
 L["DEATHKNIGHT:short"] = "DK"
@@ -27,6 +31,18 @@ L["DRUID:short"] = "Druid"
 L["PALADIN:short"] = "Pala"
 L["MAGE:short"] = "Mage"
 L["MONK:short"] = "Monk"
+
+L["WARRIOR"] = "Warrior"
+L["DEATHKNIGHT"] = "Death Knight"
+L["WARLOCK"] = "Warlock"
+L["PRIEST"] = "Priest"
+L["HUNTER"] = "Hunter"
+L["ROGUE"] = "Rogue"
+L["SHAMAN"] = "Shaman"
+L["DRUID"] = "Druid"
+L["PALADIN"] = "Paladin"
+L["MAGE"] = "Mage"
+L["MONK"] = "Monk"
 
 L["specID:250:short"] = "Blood"
 L["specID:251:short"] = "Frost"
@@ -97,13 +113,27 @@ L["TargetBar"] = "Target"
 L["PetBar"] = "Pet"
 L["SkillHistory"] = "Skill History"
 L["InterruptsEx"] = "Interrupts"
+L["Spectate"] = "Spectate"
 
 L["The Arena battle has begun!"] = "The Arena battle has begun!"
 L["Show arena frames"] = true
 L["Toggle to show your arena frames"] = true
 
 L["Hide self frame"] = true
-L["Hide the player's frame"] = true 
+L["Hide the player's frame"] = true
+
+-- Races
+L["Human"] = true
+L["Orc"] = true
+L["Dwarf"] = true
+L["Night Elf"] = true
+L["Undead"] = true
+L["Tauren"] = true
+L["Gnome"] = true
+L["Troll"] = true
+L["Goblin"] = true
+L["Blood Elf"] = true
+L["Draenei"] = true
 
 -- General
 L["Highlight player target"] = true

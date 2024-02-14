@@ -5,7 +5,13 @@ local LSM = LibStub("LibSharedMedia-3.0")
 -- global functions
 local strfind = string.find
 local pairs = pairs
-local UnitPower, UnitPowerMax, UnitPowerType = UnitPower, UnitPowerMax, UnitPowerType
+
+local Spectate = GladiusEx:GetModule("Spectate", true)
+
+local UnitPower = Spectate and Spectate.UnitPower or UnitPower
+local UnitPowerMax = Spectate and Spectate.UnitPowerMax or UnitPowerMax
+local UnitPowerType = Spectate and Spectate.UnitPowerType or UnitPowerType
+
 
 local PowerBar = GladiusEx:NewGladiusExModule("PowerBar", {
     powerBarAttachTo = "HealthBar",

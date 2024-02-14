@@ -50,3 +50,9 @@ function PetBar:UNIT_PET(event, unit)
         self:Refresh(unit)
     end
 end
+
+function PetBar:UNIT_HEALTH_PET(event, unit)
+	if self.frame[unit] then
+		self:Refresh(unit)
+	end
+end
