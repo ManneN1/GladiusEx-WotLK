@@ -1,6 +1,6 @@
 -- Racials
 -- Gift of the Naaru (Draenei)
-LCT_SpellData[28880] = {
+LCT_SpellData[59547] = {
 	race = "Draenei",
 	heal = true,
 	duration = 5,
@@ -36,6 +36,7 @@ LCT_SpellData[28730] = {
   silence = true,
 }
 LCT_SpellData[25046] = 28730
+
 -- Blood Fury (Orc)
 LCT_SpellData[20572] = {
 	race = "Orc",

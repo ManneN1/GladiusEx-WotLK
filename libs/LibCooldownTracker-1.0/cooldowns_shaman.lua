@@ -182,7 +182,7 @@ LCT_SpellData[61300] = 61295
 LCT_SpellData[61301] = 61295
 
 -- Thunderstorm
-LCT_SpellData[51490] = {
+LCT_SpellData[59159] = {
   class = "SHAMAN",
   cooldown = 35,
   talent = true,
