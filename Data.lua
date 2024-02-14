@@ -53,7 +53,10 @@ function GladiusEx:GetSpecList()
 		[GladiusEx:SafeGetSpellName(49184)]	= 251,		-- Howling Blast
 		[GladiusEx:SafeGetSpellName(55610)]	= 251,		-- Imp. Icy Talons
 		[GladiusEx:SafeGetSpellName(55090)]	= 252,		-- Scourge Strike
-		[GladiusEx:SafeGetSpellName(49222)]	= 252,		-- Bone Shield	
+		[GladiusEx:SafeGetSpellName(49222)]	= 252,		-- Bone Shield
+        [GladiusEx:SafeGetSpellName(49206)] = 252,      -- Summon Gargoyle
+        [GladiusEx:SafeGetSpellName(51052)] = 252,      -- Anti-Magic Zone
+        [GladiusEx:SafeGetSpellName(49194)] = 252,      -- Unholy Blight    
 		-- MAGE                                         
 		[GladiusEx:SafeGetSpellName(44425)]	= 62,		-- Arcane Barrage
 		[GladiusEx:SafeGetSpellName(31583)]	= 62,		-- Arcane Empowerment
@@ -362,4 +365,180 @@ GladiusEx.SPECIALIZATION_ICONS = {
     [71]  = "Interface\\Icons\\Ability_Warrior_DefensiveStance",
     [72]  = "Interface\\Icons\\Ability_Warrior_Bladestorm",
     [73]  = "Interface\\Icons\\Ability_Warrior_InnerRage",
+}
+
+GladiusEx.specIDToName = {
+    [250] = "Blood",
+    [251] = "Frost",
+    [252] = "Unholy",
+    [102] = "Balance",
+    [103] = "Feral",
+    [105] = "Restoration",
+    [253] = "Beast Mastery",
+    [254] = "Marksmanship",
+    [255] = "Survival",
+    [62] = "Arcane",
+    [63] = "Fire",
+    [64] = "Frost",
+    [65] = "Holy",
+    [66] = "Protection",
+    [70] = "Retribution",
+    [256] = "Discipline",
+    [257] = "Holy",
+    [258] = "Shadow",
+    [259] = "Assassination",
+    [260] = "Combat",
+    [261] = "Subtlety",
+    [262] = "Elemental",
+    [263] = "Enhancement",
+    [264] = "Restoration",
+    [265] = "Affliction",
+    [266] = "Demonology",
+    [267] = "Destruction",
+    [71] = "Arms",
+    [72] = "Fury",
+    [73] = "Protection"
+}
+
+GladiusEx.classIDByClassName = {
+    ["WARRIOR"] = 1,
+    ["PALADIN"] = 2,
+    ["HUNTER"] = 3,
+    ["ROGUE"] = 4,
+    ["PRIEST"] = 5,
+    ["DEATHKNIGHT"] = 6,
+    ["SHAMAN"] = 7,
+    ["MAGE"] = 8,
+    ["WARLOCK"] = 9,
+    ["MONK"] = 10,
+    ["DRUID"] = 11
+}
+
+GladiusEx.specIDToClassID = {
+    [250] = 6, -- Blood DK
+    [251] = 6, -- Frost DK
+    [252] = 6, -- Unholy DK
+    [102] = 11, -- Balance Druid
+    [103] = 11, -- Feral Druid
+    [105] = 11, -- Restoration Druid
+    [253] = 3, -- Beast Mastery Hunter
+    [254] = 3, -- Marksmanship Hunter
+    [255] = 3, -- Survival Hunter
+    [62] = 8, -- Arcane Mage
+    [63] = 8, -- Fire Mage
+    [64] = 8, -- Frost Mage
+    [65] = 2, -- Holy Paladin
+    [66] = 2, -- Protection Paladin
+    [70] = 2, -- Retribution Paladin
+    [256] = 5, -- Discipline Priest
+    [257] = 5, -- Holy Priest
+    [258] = 5, -- Shadow Priest
+    [259] = 4, -- Assassination Rogue
+    [260] = 4, -- Combat Rogue
+    [261] = 4, -- Subtlety Rogue
+    [262] = 7, -- Elemental Shaman
+    [263] = 7, -- Enhancement Shaman
+    [264] = 7, -- Restoration Shaman
+    [265] = 9, -- Affliction Warlock
+    [266] = 9, -- Demonology Warlock
+    [267] = 9, -- Destruction Warlock
+    [71] = 1, -- Arms Warrior
+    [72] = 1, -- Fury Warrior
+    [73] = 1 -- Protection Warrior
+}
+
+GladiusEx.classNamesByID = {
+    [1] =  "WARRIOR",
+    [2] =  "PALADIN", 
+    [3] =  "HUNTER",
+    [4] =  "ROGUE", 
+    [5] =  "PRIEST",
+    [6] =  "DEATHKNIGHT",
+    [7] =  "SHAMAN",
+    [8] =  "MAGE",
+    [9] =  "WARLOCK",
+    [11] = "DRUID",
+}
+
+GladiusEx.auraTypesByID = {
+    [0] = "None", 
+    [1] = "Magic",
+    [2] = "Curse",
+    [3] = "Disease",
+    [4] = "Poison",
+    ["none"] = "None",
+    ["unknown"] = nil,
+    ["None"] = "None",
+    ["Magic"] = "Magic",
+    ["Curse"] = "Curse",
+    ["Disease"] = "Disease",
+    ["Poison"] = "Poison",
+}
+
+GladiusEx.powerTypesByID = {
+	[0] = "MANA",
+	[1] = "RAGE",
+	[2] = "FOCUS",
+	[3] = "ENERGY",
+	[4] = "COMBO_POINTS",
+	[5] = "RUNES",
+	[6] = "RUNIC_POWER",
+}
+
+GladiusEx.factionsByRaceIDs = {
+	[1] = "Alliance", -- Human
+	[2] = "Horde", -- Orc
+	[3] = "Alliance", -- Dward
+	[4] = "Alliance", -- Night Elf
+	[5] = "Horde", -- Undead
+	[6] = "Horde", -- Tauren
+	[7] = "Alliance", -- Gnome
+	[8] = "Horde", -- Troll
+	[9] = "Horde", -- Goblin
+	[10] = "Horde", -- Blood Elf
+	[11] = "Alliance", -- Draenei
+}
+
+GladiusEx.raceNamesByID = {
+    [1] = "Human",
+    [2] = "Orc",
+    [3] = "Dwarf",
+    [4] = "Night Elf",
+    [5] = "Undead",
+    [6] = "Tauren",
+    [7] = "Gnome",
+    [8] = "Troll",
+    [9] = "Goblin",
+    [10] = "Blood Elf",
+    [11] = "Draenei",
+    ["Human"] = 1,
+    ["Orc"] = 2,
+    ["Dwarf"] = 3,
+    ["NightElf"] = 4,
+    ["Undead"] = 5,
+    ["Tauren"] = 6,
+    ["Gnome"] = 7,
+    ["Troll"] = 8,
+    ["Goblin"] = 9,
+    ["BloodElf"] = 10,
+    ["Draenei"] = 11,
+}
+
+GladiusEx.raceIDsByRacialTraits = {
+    [59752] = 1, -- EMFH
+    [20589] = 7, -- Escape Artist
+    [7744] = 5, -- WotF
+    [59542] = 11, -- Gift of the Naaru
+    [20594] = 3, -- Stoneform
+    [58984] = 4, -- Shadowmeld
+    [20549] = 6, -- War Stomp
+    [33702] = 2, -- Blood Fury (Orc)
+    [26297] = 8, -- Berserking (Troll)
+    [28730 ] = 10, -- Arcane Torrent (Blood Elf)
+}
+
+GladiusEx.auraImmunities = {
+    [54748] = true, -- Burning Determination (Fire talent)
+    [31821] = true, -- Aura Mastery (Pala talent - only works on targets which also have Concentration Aura)
+    [19746] = true, -- Concentration Aura (Pala aura - only works on targets which also have Aura Mastery)
 }
