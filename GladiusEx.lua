@@ -10,9 +10,17 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local select, type, pairs, tonumber, wipe = select, type, pairs, tonumber, wipe
 local strfind, strmatch = string.find, string.match
 local max, abs, floor, ceil = math.max, math.abs, math.floor, math.ceil
-local UnitIsDeadOrGhost, UnitGUID, UnitExists, UnitClass, UnitAura, UnitCastingInfo, UnitChannelInfo
 local InCombatLockdown = InCombatLockdown
 local GetNumArenaOpponents, GetNumPartyMembers = GetNumArenaOpponents, GetNumPartyMembers
+
+local Spectate = GladiusEx:GetModule("Spectate", true)
+
+local UnitIsDeadOrGhost = Spectate and Spectate.UnitIsDeadOrGhost or UnitIsDeadOrGhost
+local UnitGUID = Spectate and Spectate.UnitGUID or UnitGUID
+local UnitExists = Spectate and Spectate.UnitExists or UnitExists
+local UnitAura = Spectate and Spectate.UnitAura or UnitAura
+local UnitCastingInfo = Spectate and Spectate.UnitCastingInfo or UnitCastingInfo
+local UnitChannelInfo = Spectate and Spectate.UnitChannelInfo or UnitChannelInfo
 
 local arena_units = {
     ["arena1"] = true,

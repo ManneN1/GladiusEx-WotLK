@@ -15,9 +15,12 @@ end
 local strfind = string.find
 local pairs, select = pairs, select
 local tinsert, tsort = table.insert, table.sort
-local UnitAura, UnitBuff, UnitDebuff, GetSpellInfo = UnitAura, UnitBuff, UnitDebuff, GetSpellInfo
 local band = bit.band
 local ceil, floor, max, min = math.ceil, math.floor, math.max, math.min
+local GetSpellInfo = GetSpellInfo
+
+local Spectate = GladiusEx:GetModule("Spectate", true)
+local UnitAura = Spectate and Spectate.UnitAura or UnitAura
 
 local FILTER_TYPE_DISABLED = 0
 local FILTER_TYPE_WHITELIST = 1
@@ -183,10 +186,8 @@ function Auras:UpdateUnitAuras(event, unit)
         local name, rank, icon, count, dispelType, duration, expires, caster, isStealable, shouldConsolidate, spellID
         if testing then
             name, rank, icon, count, dispelType, duration, expires, caster, isStealable, shouldConsolidate, spellID = GetTestAura(index, buff)
-        elseif buff then
-            name, rank, icon, count, dispelType, duration, expires, caster, isStealable, shouldConsolidate, spellID = UnitBuff(unit, index)
         else
-            name, rank, icon, count, dispelType, duration, expires, caster, isStealable, shouldConsolidate, spellID = UnitDebuff(unit, index)
+            name, rank, icon, count, dispelType, duration, expires, caster, isStealable, shouldConsolidate, spellID = UnitAura(unit, index, buff and "HELPFUL" or "HARMFUL")
         end
 
         aura_frame.unit = unit
