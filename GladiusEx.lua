@@ -13,14 +13,8 @@ local max, abs, floor, ceil = math.max, math.abs, math.floor, math.ceil
 local InCombatLockdown = InCombatLockdown
 local GetNumArenaOpponents, GetNumPartyMembers = GetNumArenaOpponents, GetNumPartyMembers
 
-local Spectate = GladiusEx:GetModule("Spectate", true)
-
-local UnitIsDeadOrGhost = Spectate and Spectate.UnitIsDeadOrGhost or UnitIsDeadOrGhost
-local UnitGUID = Spectate and Spectate.UnitGUID or UnitGUID
-local UnitExists = Spectate and Spectate.UnitExists or UnitExists
-local UnitAura = Spectate and Spectate.UnitAura or UnitAura
-local UnitCastingInfo = Spectate and Spectate.UnitCastingInfo or UnitCastingInfo
-local UnitChannelInfo = Spectate and Spectate.UnitChannelInfo or UnitChannelInfo
+local UnitIsDeadOrGhost, UnitIsDeadOrGhost, UnitGUID, UnitExists, UnitClass, UnitAura  = UnitIsDeadOrGhost, UnitIsDeadOrGhost, UnitGUID, UnitExists, UnitClass, UnitAura
+local UnitChannelInfo, UnitCastingInfo, UnitPowerMax, UnitPowerType = UnitChannelInfo, UnitCastingInfo, UnitPowerMax, UnitPowerType
 
 local arena_units = {
     ["arena1"] = true,
@@ -267,8 +261,8 @@ function GladiusEx:OnInitialize()
     UnitAura = spectate and spectate.UnitAura or UnitAura
     UnitChannelInfo = spectate and spectate.UnitChannelInfo or UnitChannelInfo
     UnitCastingInfo = spectate and spectate.UnitCastingInfo or UnitCastingInfo
-    -- UnitPowerType = spectate and spectate.UnitPowerType or UnitPowerType
-    -- UnitPower = spectate and spectate.UnitPower or UnitPower
+    UnitPowerType = spectate and spectate.UnitPowerType or UnitPowerType
+    UnitPowerMax = spectate and spectate.UnitPowerMax or UnitPowerMax
         
     -- spec detection
     self.specSpells = self:GetSpecList()
