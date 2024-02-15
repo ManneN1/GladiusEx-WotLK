@@ -208,7 +208,8 @@ function Spectate:GetUnitByID(unitID)
 end
 
 function Spectate:GetUnitIdByGUID(guid)
-	return self.units and self.units[guid] or nil
+    if not self:IsSpectating() then return GladiusEx:GetUnitIdByGUID(guid) end
+    return self.units and self.units[guid] or nil
 end
 
 function Spectate:AddUnit(guid)

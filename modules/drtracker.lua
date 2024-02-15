@@ -3,11 +3,17 @@ local L = LibStub("AceLocale-3.0"):GetLocale("GladiusEx")
 local fn = LibStub("LibFunctional-1.0")
 local LSM = LibStub("LibSharedMedia-3.0")
 local DRData = LibStub("DRData-1.0")
+local LibAuraInfo = LibStub("LibAuraInfo-1.0")
 
 -- global functions
 local strfind = string.find
 local pairs, unpack = pairs, unpack
 local GetTime, GetSpellTexture, UnitGUID = GetTime, GetSpellTexture, UnitGUID
+
+local Spectate = GladiusEx:GetModule("Spectate", true)
+
+local UnitAura = Spectate and Spectate.UnitAura or UnitAura
+local GetUnitIdByGUID = Spectate and function(guid) return Spectate:GetUnitIdByGUID(guid) end or function(guid) return GladiusEx:GetUnitIdByGUID(guid) end
 
 local defaults = {
     drTrackerAdjustSize = true,
@@ -24,6 +30,7 @@ local defaults = {
     drFontSize = 18,
     drCategories = {},
     drIcons = {},
+    showOnApply = true,
 }
 
 local DRTracker = GladiusEx:NewGladiusExModule("DRTracker",
@@ -139,7 +146,7 @@ function DRTracker:UpdateIcon(unit, drCat)
     end
 end
 
-function DRTracker:DRFaded(unit, spellID)
+function DRTracker:DRFaded(unit, spellID, applied)
     local drCat = DRData:GetSpellCategory(spellID)
     if self.db[unit].drCategories[drCat] == false then return end
 
@@ -148,22 +155,26 @@ function DRTracker:DRFaded(unit, spellID)
         self:UpdateIcon(unit, drCat)
     end
 
+    local useApplied = self.db[unit].showOnApply
+    
     local tracked = self.frame[unit].tracker[drCat]
+    
 
-    if tracked.active then
+    if (applied or not useApplied) and tracked.active then
+        local oldDiminished = tracked.diminished
         tracked.diminished = DRData:NextDR(tracked.diminished)
-    else
+        
+        if oldDiminished and oldDiminished == 0.25 and tracked.diminished == 0 then
+            tracked.diminished = 1
+        end
+    elseif (applied or not useApplied) then
         tracked.active = true
         tracked.diminished = 1
     end
 
-    local time_left = DRData:GetResetTime()
-    tracked.reset_time = time_left + GetTime()
-
     local text, r, g, b = unpack(drTexts[tracked.diminished])
     tracked.text:SetText(text)
     tracked.text:SetTextColor(r,g,b)
-    
     
     local txtID = spellID 
     if self.db[unit].drIcons[drCat] ~= nil then
@@ -173,18 +184,30 @@ function DRTracker:DRFaded(unit, spellID)
     tracked.texture:SetTexture(texture)
     
     if self.db[unit].drTrackerCooldown then
-        tracked.cooldown:SetCooldown(GetTime(), time_left)
-        --tracked.cooldown:SetBlingDuration(50)
+        if useApplied and applied then
+            tracked.cooldown:SetCooldown(0, 0)
+            tracked.cooldown:Hide()
+        else
+            local time_left = DRData:GetResetTime()
+            tracked.reset_time = time_left + GetTime()
+            tracked.cooldown:SetCooldown(GetTime(), time_left)
+            tracked.cooldown:Show()
+            --tracked.cooldown:SetBlingDuration(50)
+        end
     end
 
-    tracked:SetScript("OnUpdate", function(f, elapsed)
-        -- add extra time to allow the cooldown frame to play the bling animation
-        if GetTime() >= (f.reset_time + 0.5) then
-            tracked.active = false
-            self:SortIcons(unit)
-            f:SetScript("OnUpdate", nil)
-        end
-    end)
+    if not useApplied or not applied then
+        tracked:SetScript("OnUpdate", function(f, elapsed)
+            -- add extra time to allow the cooldown frame to play the bling animation
+            if GetTime() >= (f.reset_time + 0.5) then
+                tracked.active = false
+                self:SortIcons(unit)
+                f:SetScript("OnUpdate", nil)
+            end
+        end)
+    elseif useApplied and applied then
+        tracked:SetScript("OnUpdate", nil)
+    end
 
     tracked:Show()
     self:SortIcons(unit)
@@ -222,11 +245,67 @@ end
 function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName, cFlags, destGUID, dName, dFlags, spellID, spellName, spellSchool, auraType)
     -- Enemy had a debuff refreshed before it faded
     -- Buff or debuff faded from an enemy
-    if eventType == "SPELL_AURA_REFRESH" or eventType == "SPELL_AURA_REMOVED" then
-        if auraType == "DEBUFF" and DRData:GetSpellCategory(spellID) then
-            local unit = GladiusEx:GetUnitIdByGUID(destGUID)
+    if eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH" or eventType == "SPELL_AURA_REMOVED" then
+        local drCat = DRData:GetSpellCategory(spellID)
+        if drCat and auraType == "DEBUFF" then
+            local unit = GetUnitIdByGUID(destGUID)
             if unit and self.frame[unit] then
-                self:DRFaded(unit, spellID)
+                
+                -- Bug workaround: for some spells, when spectating, _REFRESH is fired right after _APPLIED causing bugs (on many servers)
+                if cGUID and spellID and destGUID then
+                    if eventType == "SPELL_AURA_APPLIED" then
+                        self[cGUID..spellID..destGUID] = { lastTime = GetTime(), timer = GladiusEx:ScheduleTimer(self.ClearData, 20, self, cGUID, spellID, destGUID) }
+                    else
+                        local data = self[cGUID..spellID..destGUID]
+                        if data and data.lastTime + 0.5 > GetTime() then
+                            self:ClearData(cGUID, spellID, destGUID)
+                            return
+                        end
+                    end
+                end
+                
+                -- Dynamic DR reset early if we have a full duration aura on _REFRESH / _APPLIED 
+                local tracked = (self.frame[unit] and self.frame[unit].tracker) and self.frame[unit].tracker[drCat] or nil
+                if tracked and (eventType == "SPELL_AURA_REFRESH" or eventType == "SPELL_AURA_APPLIED") then
+                    if self:HasFullDurationAura(unit, cGUID, spellID) then
+                        tracked.active = false
+                    end
+                end
+                
+                
+                local applied = eventType == "SPELL_AURA_APPLIED"
+                if not applied or (applied and self.db[unit].showOnApply) then
+                    self:DRFaded(unit, spellID, applied)
+                end
+            end
+        end
+    end
+end
+
+function DRTracker:ClearData(cGUID, spellID, destGUID)
+    local data = self[cGUID..spellID..destGUID]
+    
+    if data then
+        GladiusEx:CancelTimer(data.timer)
+        self[cGUID..spellID..destGUID] = nil
+    end
+end
+
+function DRTracker:HasFullDurationAura(unit, cGUID, spellID)
+    local fullDuration = LibAuraInfo:GetDuration(spellID, nil, nil, true)
+    
+    if fullDuration then
+        local srcUnit = GetUnitIdByGUID(srcGUID)
+
+        for i=1, 40 do
+            local name, _, _, _, _, duration, _, unitCaster, _, _, sSpellID, srcGUID = UnitAura(unit, i, "HARMFUL")
+            if not name then break end
+            if sSpellID == spellID then
+                if ((not srcGUID or srcGUID == cGUID) or ((not unitCaster and not scrUnit) or (unitCaster and srcUnit and unitCaster == srcUnit))) then
+                    if duration == fullDuration then
+                        return true
+                    end
+                end
             end
         end
     end
@@ -303,13 +382,20 @@ function DRTracker:Reset(unit)
 end
 
 function DRTracker:Test(unit)
-    self:DRFaded(unit, 64058)
-    self:DRFaded(unit, 118)
-    self:DRFaded(unit, 118)
+    self:DRFaded(unit, 64058, true)
+    self:DRFaded(unit, 64058, false)
+    
+    self:DRFaded(unit, 118, true)
+    self:DRFaded(unit, 118, false)
+    self:DRFaded(unit, 118, true)
+    self:DRFaded(unit, 118, false)
 
-    self:DRFaded(unit, 33786)
-    self:DRFaded(unit, 33786)
-    self:DRFaded(unit, 33786)
+    self:DRFaded(unit, 33786, true)
+    self:DRFaded(unit, 33786, false)
+    self:DRFaded(unit, 33786, true)
+    self:DRFaded(unit, 33786, false)
+    self:DRFaded(unit, 33786, true)
+    self:DRFaded(unit, 33786, false)
 end
 
 function DRTracker:GetOptions(unit)
@@ -370,11 +456,18 @@ function DRTracker:GetOptions(unit)
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             order = 30,
                         },
+                        showOnApply = {
+                            type = "toggle",
+                            name = L["Show on Apply"],
+                            desc = L["Show DRs on start instead of on refresh/removal"],
+                            disabled = function() return not self:IsUnitEnabled(unit) end,
+                            order = 35,
+                        },
                         sep4 = {
                             type = "description",
                             name = "",
                             width = "full",
-                            order = 33,
+                            order = 40,
                         },
                         drTrackerFrameLevel = {
                             type = "range",
@@ -383,7 +476,7 @@ function DRTracker:GetOptions(unit)
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             hidden = function() return not GladiusEx.db.base.advancedOptions end,
                             softMin = 1, softMax = 100, step = 1,
-                            order = 35,
+                            order = 45,
                         },
                     },
                 },

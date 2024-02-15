@@ -512,7 +512,7 @@ function GladiusEx:SetupOptions()
                             specManaLimit = {
                                 type = "range",
                                 name = "Mana Specialization Limit",
-                                desc = "This limit will be used to determine whether a Shaman is Enhancement, a Paladin is Holy (etc)",
+                                desc = "This mana limit will be used to determine whether a Shaman is Enhancement, a Paladin is Holy (etc)",
                                 min = 0,
                                 max = 300000,
                                 step = 100,
