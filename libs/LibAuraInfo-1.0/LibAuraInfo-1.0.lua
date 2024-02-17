@@ -933,7 +933,7 @@ function lib:AddAuraDose(dstGUID, spellID, srcGUID)	--
 				
 				data.startTime = GetTime()
 				data.expirationTime = data.duration + data.startTime
-                data.srcGUID = data.srcGUID and data.srcGUID or srcGUID
+                -- data.srcGUID = data.srcGUID and data.srcGUID or srcGUID
 
 				return true, data.stackCount, data.expirationTime
 			end
@@ -963,10 +963,7 @@ function lib:RemoveAuraDose(dstGUID, spellID, srcGUID)	--
 			data = self.GUIDAuras[dstGUID][i]
 			if data.spellID == spellID then
 				data.stackCount = (data.stackCount or 1) - 1
-                
-                if not data.srcGUID and srcGUID then 
-                    self.GUIDAuras[dstGUID][i].srcGUID = srcGUID
-                end
+                -- data.srcGUID = data.srcGUID and data.srcGUID or srcGUID
 				
                 return true, data.stackCount, data.expirationTime
 			end
@@ -1052,7 +1049,6 @@ function lib:RemoveAllAurasFromGUID(dstGUID)		--
 -- Remove all auras on a GUID. They must have died.	--
 ------------------------------------------------------
 	self.GUIDAuras[dstGUID] = self.GUIDAuras[dstGUID] and {} or  nil
-    local dstName = self:GetGUIDInfo(dstGUID)
 end
 
 --[[
