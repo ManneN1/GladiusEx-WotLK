@@ -1126,7 +1126,10 @@ function lib.frame:SPELL_AURA_REFRESH(event, timestamp, eventType, srcGUID, srcN
 
 	if refreshed then
 		lib.callbacks:Fire("LibAuraInfo_AURA_REFRESH", dstGUID, spellID, srcGUID, spellSchool, auraType)
+        return
     end
+
+    self:SPELL_AURA_APPLIED(event, timestamp, eventType, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
 end
 
 --DOSE = spell stacking
@@ -1139,6 +1142,8 @@ function lib.frame:SPELL_AURA_APPLIED_DOSE(event, timestamp, eventType, srcGUID,
         lib.callbacks:Fire("LibAuraInfo_AURA_APPLIED_DOSE", dstGUID, spellID, srcGUID, spellSchool, auraType, stackCount, expirationTime)
 		return
 	end
+    
+    self:SPELL_AURA_APPLIED(event, timestamp, eventType, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
 end
 
 
@@ -1151,7 +1156,8 @@ function lib.frame:SPELL_AURA_APPLIED_REMOVED_DOSE(event, timestamp, eventType, 
 		lib.callbacks:Fire("LibAuraInfo_AURA_APPLIED_DOSE", dstGUID, spellID, srcGUID, spellSchool, auraType, stackCount, expirationTime)
 		return
 	end
-	
+
+	self:SPELL_AURA_APPLIED(event, timestamp, eventType, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
 end
 
 
