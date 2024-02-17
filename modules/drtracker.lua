@@ -167,7 +167,7 @@ function DRTracker:DRFaded(unit, spellID, applied)
         if oldDiminished and oldDiminished == 0.25 and tracked.diminished == 0 then
             tracked.diminished = 1
         end
-    elseif (applied or not useApplied) then
+    elseif (applied or not useApplied) or not tracked.active then
         tracked.active = true
         tracked.diminished = 1
     end
