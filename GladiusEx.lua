@@ -808,7 +808,7 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
             if class and UnitPowerType(unit) == 0 then
                 local p = UnitPowerMax(unit)
                 local limit = self.db.base.specManaLimit
-                if p > 2 then -- 0 if not exists and 1 if spectate
+                if p > 2 then -- 0 if not exists and 1 if spectating and not exists
                     if class == "PALADIN" and p > limit then
                         specID = 65 -- Holy
                     elseif class == "DRUID" and p < limit then
@@ -823,7 +823,7 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
                 
                 if not auraName then break end
                 
-                if not specID and unitCaster == unit then
+                if unitCaster and unitCaster == unit then
                     specID = self.specSpells[auraName]
                     name = auraName
                     if specID then
@@ -839,7 +839,7 @@ function GladiusEx:IdentifyUnitSpecialization(unit, name)
             self.buttons[unit].specID = specID
             self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
             self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
-        end     
+        end
     end
 end
 
