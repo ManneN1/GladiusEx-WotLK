@@ -137,6 +137,7 @@ function GladiusEx:NewUnitBarModule(name, defaults_arena, defaults_party)
     end
 
     function UnitBar:Refresh(unit)
+        if not unit or not self.frame[unit] or not self.frame[unit].statusbar or not self.frame[unit].statusbar.unit then return end
         local tunit = self.frame[unit].statusbar.unit
         if UnitExists(tunit) then
             self:SetClassIcon(unit)
