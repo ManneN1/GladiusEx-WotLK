@@ -595,7 +595,6 @@ function ClassIcon:Update(unit)
 end
 
 function ClassIcon:Refresh(unit)
-    self:SetClassIcon(nil, unit)
     self:UpdateAura(unit)
 end
 
@@ -604,7 +603,6 @@ function ClassIcon:Show(unit)
     self.frame[unit]:Show()
 
     -- set class icon
-    self:SetClassIcon(nil, unit)
     self:UpdateAura(unit)
 end
 
