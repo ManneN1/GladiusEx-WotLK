@@ -155,7 +155,6 @@ local function CheckUnitAuras(unitID, filterType)
 	local name, rank, dispelType, duration, isStealable, spellID, unitCaster, expirationTime, stackCount, shouldConsolidate
 	
 	local dstGUID = UnitGUID(unitID)
-	local srcGUID
 	
     local change = false
  
@@ -224,6 +223,8 @@ local function CheckUnitAuras(unitID, filterType)
 		end
 		
 		if lib.trackAuras then
+            local srcGUID = nil
+
             if unitCaster then
                 srcGUID = UnitGUID(unitCaster)
             end
