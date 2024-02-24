@@ -476,18 +476,6 @@ function Spectate:CheckUnitName(unit)
     self:SetUnitName(actual_unit, name)
 end
 
-function Spectate:CheckPowerType(unit)
-    local guid = UnitGUID(unit)
-    
-    local actual_unit = self:GetUnitByID(guid)
-    -- Note: Comparison against classID, so it's important that this is checked before classID is updated in case of /reload
-    if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].classID then return end
-    
-    local powerType = UnitPowerType(unit)
-    
-    self:SetUnitPowerType(actual_unit, powerType)
-end
-
 function Spectate:CheckUnitRace(unit)
     local guid = UnitGUID(unit)
     
@@ -517,7 +505,7 @@ function Spectate:CheckUnitPower(unit)
     local guid = UnitGUID(unit)
     
     local actual_unit = self:GetUnitByID(guid)
-    if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].maxPower then return end
+    if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].maxPower ~= 1 then return end
     
     self:SetUnitPowerType(actual_unit, UnitPowerType(unit))
     self:SetUnitMaxPower(actual_unit, UnitPowerMax(unit))
