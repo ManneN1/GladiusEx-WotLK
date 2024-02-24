@@ -148,7 +148,10 @@ end
 
 local function CheckUnitAuras(unitID, filterType)
 --~ 	name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId  = UnitAura("unit", index or "name"[, "rank"[, "filter"]]) 
-	local i = 1;
+	
+    if not unitID or not UnitExists(unitID) then return end
+    
+    local i = 1;
 	local name, rank, dispelType, duration, isStealable, spellID, unitCaster, expirationTime, stackCount, shouldConsolidate
 	
 	local dstGUID = UnitGUID(unitID)
