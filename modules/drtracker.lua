@@ -302,7 +302,10 @@ function DRTracker:HasFullDurationAura(unit, cGUID, spellID)
             if not name then break end
             if sSpellID == spellID then
                 if ((not srcGUID or srcGUID == cGUID) or ((not unitCaster and not scrUnit) or (unitCaster and srcUnit and unitCaster == srcUnit))) then
-                    if duration == fullDuration then
+                    -- Some classes/races have CC duration reduction effects, thus we have to check if it's at least longer than 50% of fullDuration
+                    -- which would imply it's possibly reduced by effects - but at least not DRd (which would be less than or equal to 50%)
+                    -- Note: No class/race/comp combo has the possibility to reduce a CC more than than 50%
+                    if duration == fullDuration or duration > (fullDuration / 2) then
                         return true
                     end
                 end
