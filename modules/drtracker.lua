@@ -273,7 +273,7 @@ function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName
                 end
                 
                 
-                local applied = eventType == "SPELL_AURA_APPLIED"
+                local applied = eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH"
                 if not applied or (applied and self.db[unit].showOnApply) then
                     self:DRFaded(unit, spellID, applied)
                 end
