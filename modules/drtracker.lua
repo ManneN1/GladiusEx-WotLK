@@ -251,8 +251,8 @@ function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName
             local unit = GetUnitIdByGUID(destGUID)
             if unit and self.frame[unit] then
                 
-                -- Bug workaround: for some spells, when spectating, _REFRESH is fired right after _APPLIED causing bugs (on many servers)
-                if cGUID and spellID and destGUID then
+                -- Bug workaround: for some spells, when spectating (only), _REFRESH is fired right after _APPLIED causing bugs (on many servers)
+                if GladiusEx:IsSpectating() and cGUID and spellID and destGUID then
                     if eventType == "SPELL_AURA_APPLIED" then
                         self[cGUID..spellID..destGUID] = { lastTime = GetTime(), timer = GladiusEx:ScheduleTimer(self.ClearData, 20, self, cGUID, spellID, destGUID) }
                     else
