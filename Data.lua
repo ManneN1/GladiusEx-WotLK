@@ -542,3 +542,12 @@ GladiusEx.auraImmunities = {
     [31821] = true, -- Aura Mastery (Pala talent - only works on targets which also have Concentration Aura)
     [19746] = true, -- Concentration Aura (Pala aura - only works on targets which also have Aura Mastery)
 }
+
+-- K: This is used to assess whether a DR has (dynamically) reset early
+-- WotLK: Leaving this empty for now, need to sit down and go through all the auras in DRList-1.0
+-- There's some guidance available in LibAuras, but it doesn't account for things like
+-- talents and most importantly combo points (Maim/Kidney Shot), so some extra care is needed
+GladiusEx.auraDurations = { 
+  --[408] = 6,     -- Kidney Shot (varies)
+  --[22570] = 5,   -- Maim (varies)
+}

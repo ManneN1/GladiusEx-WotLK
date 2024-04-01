@@ -308,7 +308,7 @@ function DRTracker:ClearData(cGUID, spellID, destGUID)
 end
 
 function DRTracker:HasFullDurationAura(unit, cGUID, spellID)
-    local fullDuration = LibAuraInfo:GetDuration(spellID, nil, nil, true)
+    local fullDuration = GladiusEx.auraDurations[spellID]
     
     if fullDuration then
         local srcUnit = GetUnitIdByGUID(srcGUID)
