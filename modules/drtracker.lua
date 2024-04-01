@@ -514,10 +514,12 @@ function DRTracker:GetOptions(unit)
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             order = 5,
                         },
-                        sep = {
-                            type = "description",
-                            name = "",
-                            width = "full",
+                        drTrackerSize = {
+                            type = "range",
+                            name = L["Icon size"],
+                            desc = L["Size of the icons"],
+                            min = 1, softMin = 10, softMax = 100, bigStep = 1,
+                            disabled = function() return self.db[unit].drTrackerAdjustSize or not self:IsUnitEnabled(unit) end,
                             order = 6,
                         },
                         drTrackerAdjustSize = {
@@ -526,14 +528,6 @@ function DRTracker:GetOptions(unit)
                             desc = L["Adjust size to the frame size"],
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             order = 7,
-                        },
-                        drTrackerSize = {
-                            type = "range",
-                            name = L["Icon size"],
-                            desc = L["Size of the icons"],
-                            min = 1, softMin = 10, softMax = 100, bigStep = 1,
-                            disabled = function() return self.db[unit].drTrackerAdjustSize or not self:IsUnitEnabled(unit) end,
-                            order = 10,
                         },
                     },
                 },
