@@ -10,39 +10,6 @@ local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local GetSpellInfo = GetSpellInfo
 local GetRealNumPartyMembers, GetRealNumRaidMembers, IsRaidLeader, IsRaidOfficer = GetRealNumPartyMembers, GetRealNumRaidMembers, IsRaidLeader, IsRaidOfficer
 
-local specIDToName = {
-    [250] = "Blood",
-    [251] = "Frost",
-    [252] = "Unholy",
-    [102] = "Balance",
-    [103] = "Feral",
-    [105] = "Restoration",
-    [253] = "Beast Mastery",
-    [254] = "Marksmanship",
-    [255] = "Survival",
-    [62] = "Arcane",
-    [63] = "Fire",
-    [64] = "Frost",
-    [65] = "Holy",
-    [66] = "Protection",
-    [70] = "Retribution",
-    [256] = "Discipline",
-    [257] = "Holy",
-    [258] = "Shadow",
-    [259] = "Assassination",
-    [260] = "Combat",
-    [261] = "Subtlety",
-    [262] = "Elemental",
-    [263] = "Enhancement",
-    [264] = "Restoration",
-    [265] = "Affliction",
-    [266] = "Demonology",
-    [267] = "Destruction",
-    [71] = "Arms",
-    [72] = "Fury",
-    [73] = "Protection"
-}
-
 local Announcements = GladiusEx:NewGladiusExModule("Announcements", {
         drinks = true,
         health = true,
@@ -94,7 +61,7 @@ function Announcements:GLADIUSEX_SPEC_UPDATE(event, unit)
 
     if GladiusEx.buttons[unit].specID then
         local class = UnitClass(unit) or LOCALIZED_CLASS_NAMES_MALE[GladiusEx.buttons[unit].class] or "??"
-        local spec = specIDToName[GladiusEx.buttons[unit].specID]
+        local spec = GladiusEx.specIDToName[GladiusEx.buttons[unit].specID]
         self:Send(string.format(L["Enemy spec: %s (%s/%s)"], UnitName(unit) or unit, class, spec), 15, unit)
     end
 end
