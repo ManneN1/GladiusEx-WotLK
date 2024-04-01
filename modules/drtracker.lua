@@ -146,72 +146,6 @@ function DRTracker:UpdateIcon(unit, drCat)
     end
 end
 
-function DRTracker:DRFaded(unit, spellID, applied)
-    local drCat = DRData:GetSpellCategory(spellID)
-    if self.db[unit].drCategories[drCat] == false then return end
-
-    if not self.frame[unit].tracker[drCat] then
-        self:CreateIcon(unit, drCat)
-        self:UpdateIcon(unit, drCat)
-    end
-
-    local useApplied = self.db[unit].showOnApply
-    
-    local tracked = self.frame[unit].tracker[drCat]
-    
-
-    if (applied or not useApplied) and tracked.active then
-        local oldDiminished = tracked.diminished
-        tracked.diminished = DRData:NextDR(tracked.diminished)
-        
-        if oldDiminished and oldDiminished == 0.25 and tracked.diminished == 0 then
-            tracked.diminished = 1
-        end
-    elseif (applied or not useApplied) or not tracked.active then
-        tracked.active = true
-        tracked.diminished = 1
-    end
-
-    local text, r, g, b = unpack(drTexts[tracked.diminished])
-    tracked.text:SetText(text)
-    tracked.text:SetTextColor(r,g,b)
-    
-    local txtID = spellID 
-    if self.db[unit].drIcons[drCat] ~= nil then
-        txtID = self.db[unit].drIcons[drCat]
-    end
-    local _,_,texture = GetSpellInfo(txtID)
-    tracked.texture:SetTexture(texture)
-    
-    if self.db[unit].drTrackerCooldown then
-        if useApplied and applied then
-            tracked.cooldown:SetCooldown(0, 0)
-            tracked.cooldown:Hide()
-        else
-            local time_left = DRData:GetResetTime()
-            tracked.reset_time = time_left + GetTime()
-            tracked.cooldown:SetCooldown(GetTime(), time_left)
-            tracked.cooldown:Show()
-            --tracked.cooldown:SetBlingDuration(50)
-        end
-    end
-
-    if not useApplied or not applied then
-        tracked:SetScript("OnUpdate", function(f, elapsed)
-            -- add extra time to allow the cooldown frame to play the bling animation
-            if GetTime() >= (f.reset_time + 0.5) then
-                tracked.active = false
-                self:SortIcons(unit)
-                f:SetScript("OnUpdate", nil)
-            end
-        end)
-    elseif useApplied and applied then
-        tracked:SetScript("OnUpdate", nil)
-    end
-
-    tracked:Show()
-    self:SortIcons(unit)
-end
 
 function DRTracker:SortIcons(unit)
     local lastFrame
@@ -242,6 +176,91 @@ function DRTracker:SortIcons(unit)
     end
 end
 
+function DRTracker:DRFaded(unit, spellID, event)
+    local drCat = DRData:GetSpellCategory(spellID)
+    if self.db[unit].drCategories[drCat] == false then return end
+
+    if not self.frame[unit].tracker[drCat] then
+        self:CreateIcon(unit, drCat)
+        self:UpdateIcon(unit, drCat)
+    end
+    
+    local useApplied = self.db[unit].showOnApply
+
+    local applied = useApplied and (event == "SPELL_AURA_APPLIED" or event == "SPELL_AURA_REFRESH") or (event == "SPELL_AURA_APPLIED")
+
+    if not useApplied and applied then
+        return -- K: If we're not showing on apply then _APPLIED events are not relevant
+    end
+
+    local tracked = self.frame[unit].tracker[drCat]
+
+    -- Update DR levels
+    if (not applied and not useApplied) or (applied and useApplied) then
+        if tracked.active then
+            local oldDiminished = tracked.diminished
+            tracked.diminished = DRData:NextDR(tracked.diminished)
+            
+            -- K: Fallback edge-case early DR reset detection
+            if oldDiminished and oldDiminished == 0.25 and tracked.diminished == 0 then
+                tracked.diminished = 1
+            end
+        else
+            tracked.active = true
+            tracked.diminished = 1
+        end
+    end
+    
+    -- K: This could happen if a _REMOVED is received before an _APPLIED/_REFRESH
+    -- when using showOnApply (e.g, due to joining late/spectate etc) 
+    if not tracked.active then
+        return 
+    end
+
+    local text, r, g, b = unpack(drTexts[tracked.diminished])
+    tracked.text:SetText(text)
+    tracked.text:SetTextColor(r,g,b)
+    
+    local txtID = spellID 
+    if self.db[unit].drIcons[drCat] ~= nil then
+        txtID = self.db[unit].drIcons[drCat]
+    end
+    
+    local _,_,texture = GetSpellInfo(txtID)
+    tracked.texture:SetTexture(texture)
+    
+    local time_left = DRData:GetResetTime()
+    tracked.reset_time = time_left + GetTime()
+
+    -- Show the cooldown swirl
+    if self.db[unit].drTrackerCooldown then
+        if useApplied and applied then -- K: Don't show swirl on _APPLIED/REFRESH when using showOnApply
+            tracked.cooldown:SetCooldown(0, 0)
+            tracked.cooldown:Hide()
+        else
+            tracked.cooldown:SetCooldown(GetTime(), time_left)
+            tracked.cooldown:Show()
+            --tracked.cooldown:SetBlingDuration(50)
+        end
+    end
+    
+    if not applied then
+        tracked:SetScript("OnUpdate", function(f, elapsed)
+            -- add extra time to allow the cooldown frame to play the bling animation
+            if GetTime() >= (f.reset_time + 0.5) then
+                tracked.active = false
+                self:SortIcons(unit)
+                f:SetScript("OnUpdate", nil)
+            end
+        end)
+    elseif (applied and useApplied) then
+        tracked:SetScript("OnUpdate", nil)
+    end
+
+    tracked:Show()
+    self:SortIcons(unit)
+end
+
 function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName, cFlags, destGUID, dName, dFlags, spellID, spellName, spellSchool, auraType)
     -- Enemy had a debuff refreshed before it faded
     -- Buff or debuff faded from an enemy
@@ -254,10 +273,10 @@ function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName
                 -- Bug workaround: for some spells, when spectating (only), _REFRESH is fired right after _APPLIED causing bugs (on many servers)
                 if GladiusEx:IsSpectating() and cGUID and spellID and destGUID then
                     if eventType == "SPELL_AURA_APPLIED" then
-                        self[cGUID..spellID..destGUID] = { lastTime = GetTime(), timer = GladiusEx:ScheduleTimer(self.ClearData, 20, self, cGUID, spellID, destGUID) }
+                        self[cGUID..spellID..destGUID] = { lastTime = ctime, timer = GladiusEx:ScheduleTimer(self.ClearData, 20, self, cGUID, spellID, destGUID) }
                     else
                         local data = self[cGUID..spellID..destGUID]
-                        if data and data.lastTime + 0.5 > GetTime() then
+                        if data and data.lastTime + 0.5 > ctime then
                             self:ClearData(cGUID, spellID, destGUID)
                             return
                         end
@@ -273,10 +292,7 @@ function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName
                 end
                 
                 
-                local applied = eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH"
-                if not applied or (applied and self.db[unit].showOnApply) then
-                    self:DRFaded(unit, spellID, applied)
-                end
+                self:DRFaded(unit, spellID, eventType)
             end
         end
     end
@@ -385,20 +401,20 @@ function DRTracker:Reset(unit)
 end
 
 function DRTracker:Test(unit)
-    self:DRFaded(unit, 64058, true)
-    self:DRFaded(unit, 64058, false)
-    
-    self:DRFaded(unit, 118, true)
-    self:DRFaded(unit, 118, false)
-    self:DRFaded(unit, 118, true)
-    self:DRFaded(unit, 118, false)
+    self:DRFaded(unit, 64058, "SPELL_AURA_APPLIED")
+    self:DRFaded(unit, 64058, "SPELL_AURA_REMOVED")
 
-    self:DRFaded(unit, 33786, true)
-    self:DRFaded(unit, 33786, false)
-    self:DRFaded(unit, 33786, true)
-    self:DRFaded(unit, 33786, false)
-    self:DRFaded(unit, 33786, true)
-    self:DRFaded(unit, 33786, false)
+    self:DRFaded(unit, 118, "SPELL_AURA_APPLIED")
+	self:DRFaded(unit, 118, "SPELL_AURA_REMOVED")
+    self:DRFaded(unit, 118, "SPELL_AURA_APPLIED")
+    self:DRFaded(unit, 118, "SPELL_AURA_REMOVED")
+    
+    self:DRFaded(unit, 33786, "SPELL_AURA_APPLIED")
+    self:DRFaded(unit, 33786, "SPELL_AURA_REMOVED")
+    self:DRFaded(unit, 33786, "SPELL_AURA_APPLIED")
+    self:DRFaded(unit, 33786, "SPELL_AURA_REMOVED")
+    self:DRFaded(unit, 33786, "SPELL_AURA_APPLIED")
+    self:DRFaded(unit, 33786, "SPELL_AURA_REMOVED")
 end
 
 function DRTracker:GetOptions(unit)
