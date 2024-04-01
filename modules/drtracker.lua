@@ -317,7 +317,7 @@ function DRTracker:HasFullDurationAura(unit, cGUID, spellID)
             local name, _, _, _, _, duration, _, unitCaster, _, _, sSpellID, srcGUID = UnitAura(unit, i, "HARMFUL")
             if not name then break end
             if sSpellID == spellID then
-                if ((not srcGUID or (type(srcGUID) == "type" and srcGUID == cGUID)) or ((not unitCaster and not scrUnit) or (unitCaster and srcUnit and unitCaster == srcUnit))) then
+                if ((not srcGUID or (type(srcGUID) == "string" and srcGUID == cGUID)) or ((not unitCaster and not scrUnit) or (unitCaster and srcUnit and unitCaster == srcUnit))) then
                     -- Some classes/races have CC duration reduction effects, thus we have to check if it's at least longer than 50% of fullDuration
                     -- which would imply it's possibly reduced by effects - but at least not DRd (which would be less than or equal to 50%)
                     -- Note: No class/race/comp combo has the possibility to reduce a CC more than than 50%
