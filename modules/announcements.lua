@@ -250,8 +250,8 @@ function Announcements:GetOptions(unit)
                         },
                         bg = {
                             type = "toggle",
-                            name = L["Announce in battlegrounds"],
-                            desc = L["Announces when in battlegrounds"],
+                            name = "Announce in battlegrounds",
+                            desc = "Announces when in battlegrounds",
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             order = 20,
                         },
