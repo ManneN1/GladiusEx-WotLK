@@ -15,6 +15,7 @@ local Announcements = GladiusEx:NewGladiusExModule("Announcements", {
         health = true,
         resurrect = true,
         spec = true,
+        sapped = true,
         healthThreshold = 25,
         dest = "party",
     })
@@ -76,11 +77,23 @@ function Announcements:UNIT_HEALTH(event, unit)
 end
 
 local DRINK_SPELL = GetSpellInfo(57073)
+local SAP_SPELL = GetSpellInfo(51724
+)
 function Announcements:UNIT_AURA(event, unit)
     if not self:IsHandledUnit(unit) or not self.db[unit].drinks then return end
 
     if UnitAura(unit, DRINK_SPELL) then
         self:Send(string.format(L["DRINKING: %s (%s)"], UnitName(unit), UnitClass(unit)), 2, unit)
+    end
+
+    if UnitAura(unit, SAP_SPELL) then
+        if unit == "player" then
+            self:Send("IM SAPPED", 2, unit)
+        elseif UnitIsFriend(unit, "player") then
+            self:Send(string.format("FRIEND %s SAPPED", UnitName(unit)), 2, unit)
+        elseif not UnitIsFriend(unit, "player") then
+            self:Send(string.format("ENEMY %s (%s) SAPPED", UnitName(unit), UnitClass(unit)), 2, unit)
+        end
     end
 end
 
@@ -105,6 +118,8 @@ function Announcements:UNIT_SPELLCAST_START(event, unit, spell, rank)
         self:Send(string.format(L["RESURRECTING: %s (%s)"], UnitName(unit), UnitClass(unit)), 2, unit)
     end
 end
+
+
 
 -- Sends an announcement
 -- Param unit is only used for class coloring of messages
@@ -244,6 +259,13 @@ function Announcements:GetOptions(unit)
                             type = "toggle",
                             name = L["Spec detection"],
                             desc = L["Announces when the spec of an enemy was detected"],
+                            disabled = function() return not self:IsUnitEnabled(unit) end,
+                            order = 40,
+                        },
+                        sapped = {
+                            type = "toggle",
+                            name = "Sap",
+                            desc = "Announces when a player is sapped",
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             order = 40,
                         },
