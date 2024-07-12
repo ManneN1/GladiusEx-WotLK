@@ -153,7 +153,7 @@ function Announcements:Send(msg, throttle, unit)
     -- if in a battleground send messages to battleground
     if select(2, IsInInstance()) == "pvp" and self.db[unit].bg then
         dest = "none"
-        SendChatMessage(msg, "BATTLEGROUND")
+        SendChatMessage(msg, "SAY")
     elseif select(2, IsInInstance()) == "arena" then
         dest = destCache
     end
