@@ -16,6 +16,7 @@ local Announcements = GladiusEx:NewGladiusExModule("Announcements", {
         resurrect = true,
         spec = true,
         sapped = true,
+        bg = true,
         healthThreshold = 25,
         dest = "party",
     })
@@ -119,8 +120,6 @@ function Announcements:UNIT_SPELLCAST_START(event, unit, spell, rank)
     end
 end
 
-
-
 -- Sends an announcement
 -- Param unit is only used for class coloring of messages
 function Announcements:Send(msg, throttle, unit)
@@ -154,8 +153,9 @@ function Announcements:Send(msg, throttle, unit)
     end
 
     -- if in a battleground send messages to battleground
-    if select(2, IsInInstance()) == "pvp" then
+    if select(2, IsInInstance()) == "pvp" and self.db[unit].bg then
         dest = "battleground"
+        SendChatMessage(msg, "BATTLEGROUND")
     end
 
     -- party chat
@@ -230,6 +230,13 @@ function Announcements:GetOptions(unit)
                             max = 100,
                             step = 1,
                             order = 10,
+                        },
+                        bg = {
+                            type = "toggle",
+                            name = L["Announce in battlegrounds"],
+                            desc = L["Announces when in battlegrounds"],
+                            disabled = function() return not self:IsUnitEnabled(unit) end,
+                            order = 20,
                         },
                     },
                 },
