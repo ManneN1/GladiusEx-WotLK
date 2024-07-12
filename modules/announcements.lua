@@ -78,8 +78,9 @@ function Announcements:UNIT_HEALTH(event, unit)
 end
 
 local DRINK_SPELL = GetSpellInfo(57073)
-local SAP_SPELL = GetSpellInfo(51724
-)
+
+local SAP_SPELL = GetSpellInfo(51724)
+
 function Announcements:UNIT_AURA(event, unit)
     if not self:IsHandledUnit(unit) or not self.db[unit].drinks then return end
 
@@ -96,6 +97,7 @@ function Announcements:UNIT_AURA(event, unit)
             self:Send(string.format("ENEMY %s (%s) SAPPED", UnitName(unit), UnitClass(unit)), 2, unit)
         end
     end
+
 end
 
 local RES_SPELLS = {
@@ -143,50 +145,64 @@ function Announcements:Send(msg, throttle, unit)
 
     local color = unit and RAID_CLASS_COLORS[UnitClass(unit)] or { r = 0, g = 1, b = 0 }
     local dest = self.db[unit].dest
+    local destCache
+
     if dest == "self" then
         GladiusEx:Print(msg)
+        destCache = dest
     end
 
     -- change destination to party if not raid leader/officer.
     if dest == "rw" and not IsRaidLeader() and not IsRaidOfficer() and GetNumGroupMembers() > 0 then
         dest = "party"
-    end
-
-    -- if in a battleground send messages to battleground
-    if select(2, IsInInstance()) == "pvp" and self.db[unit].bg then
-        dest = "battleground"
-        SendChatMessage(msg, "BATTLEGROUND")
+        destCache = dest
     end
 
     -- party chat
     -- Not checking for party size > 0 due to 1v1 skirmishes being a thng on private realms
     if (dest == "party") then
         SendChatMessage(msg, "PARTY")
+        destCache = dest
 
     -- say
     elseif dest == "say" then
         SendChatMessage(msg, "SAY")
+        destCache = dest
 
     -- raid warning
     elseif dest == "rw" then
         SendChatMessage(msg, "RAID_WARNING")
+        destCache = dest
 
     -- floating combat text
     elseif dest == "fct" and IsAddOnLoaded("Blizzard_CombatText") then
         CombatText_AddMessage(msg, COMBAT_TEXT_SCROLL_FUNCTION, color.r, color.g, color.b)
+        destCache = dest
 
     -- MikScrollingBattleText
     elseif dest == "msbt" and IsAddOnLoaded("MikScrollingBattleText") then
         MikSBT.DisplayMessage(msg, MikSBT.DISPLAYTYPE_NOTIFICATION, false, color.r * 255, color.g * 255, color.b * 255)
+        destCache = dest
 
     -- Scrolling Combat Text
     elseif dest == "sct" and IsAddOnLoaded("sct") then
         SCT:DisplayText(msg, color, nil, "event", 1)
+        destCache = dest
 
     -- Parrot
     elseif dest == "parrot" and IsAddOnLoaded("parrot") then
         Parrot:ShowMessage(msg, "Notification", false, color.r, color.g, color.b)
+        destCache = dest
     end
+
+    -- if in a battleground send messages to battleground
+    if select(2, IsInInstance()) == "pvp" and self.db[unit].bg then
+        dest = "none"
+        SendChatMessage(msg, "BATTLEGROUND")
+    elseif select(2, IsInInstance()) == "arena" then
+        dest = destCache
+    end
+
 end
 
 function Announcements:GetOptions(unit)
@@ -199,6 +215,7 @@ function Announcements:GetOptions(unit)
         ["msbt"] = L["MikScrollingBattleText"],
         ["fct"] = L["Blizzard's Floating Combat Text"],
         ["parrot"] = L["Parrot"]
+        ["none"] = "None"
     }
 
     return {
