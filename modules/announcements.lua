@@ -77,8 +77,8 @@ function Announcements:UNIT_HEALTH(event, unit)
 end
 
 local DRINK_SPELL = GetSpellInfo(57073)
-local SAP_SPELL = GetSpellInfo(51724)
-
+local SAP_SPELL = GetSpellInfo(51724
+)
 function Announcements:UNIT_AURA(event, unit)
     if not self:IsHandledUnit(unit) or not self.db[unit].drinks then return end
 
@@ -124,8 +124,8 @@ end
 -- Sends an announcement
 -- Param unit is only used for class coloring of messages
 function Announcements:Send(msg, throttle, unit)
-    -- only send announcements inside arenas
-    if select(2, IsInInstance()) ~= "arena" then return end
+    -- only send announcements inside arenas and battlegrounds
+    if select(2, IsInInstance()) ~= "arena" or select(2, IsInInstance()) ~= "pvp" then return end
 
     -- throttling
     if not self.throttled then
@@ -151,6 +151,11 @@ function Announcements:Send(msg, throttle, unit)
     -- change destination to party if not raid leader/officer.
     if dest == "rw" and not IsRaidLeader() and not IsRaidOfficer() and GetNumGroupMembers() > 0 then
         dest = "party"
+    end
+
+    -- if in a battleground send messages to battleground
+    if select(2, IsInInstance()) == "pvp" then
+        dest = "battleground"
     end
 
     -- party chat
