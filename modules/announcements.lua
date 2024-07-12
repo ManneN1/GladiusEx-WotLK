@@ -77,8 +77,8 @@ function Announcements:UNIT_HEALTH(event, unit)
 end
 
 local DRINK_SPELL = GetSpellInfo(57073)
-local SAP_SPELL = GetSpellInfo(51724
-)
+local SAP_SPELL = GetSpellInfo(51724)
+
 function Announcements:UNIT_AURA(event, unit)
     if not self:IsHandledUnit(unit) or not self.db[unit].drinks then return end
 
