@@ -513,21 +513,23 @@ function GladiusEx:CheckArenaSize(unit)
 end
 
 function GladiusEx:GetAlwaysUpFrameForPlayers()
-    local txt = nil
+    local foundMax
     for i=1,2 do 
         if _G["AlwaysUpFrame"..i.."Text"] then
-            txt = txt or 0
+            foundMax = foundMax or 0
             local frame = _G["AlwaysUpFrame"..i.."Text"]
-            local _,tmp = strsplit(":", frame:GetText(), 2)
-            tmp = strsplit("Players", tmp)
-            if tonumber(tmp) then
-                txt = max(tonumber(tmp), txt)
-            else
-                return nil
+            if frame and frame.GetText then
+                local _,tmp = strsplit(":", frame:GetText(), 2)
+                tmp = strsplit("Players", tmp)
+                if tonumber(tmp) then
+                    foundMax = max(tonumber(tmp), foundMax)
+                else
+                    return nil
+                end
             end
         end
     end
-    return txt
+    return foundMax
 end
 
 function GladiusEx:UpdatePartyFrames()
