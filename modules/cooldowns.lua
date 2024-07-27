@@ -1050,7 +1050,7 @@ local function UpdateCooldownGroup(
 			cooldownFrame[i]:SetScript("OnEnter", function(self)
 				if self.spellid then
 					GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-					GameTooltip:SetSpellByID(self.spellid)
+					GameTooltip:SetHyperlink(GetSpellLink(self.spellid))
 				end
 			end)
 			cooldownFrame[i]:SetScript("OnLeave", function(self) GameTooltip:Hide() end)
