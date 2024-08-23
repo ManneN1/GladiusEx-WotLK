@@ -513,6 +513,7 @@ function GladiusEx:CheckArenaSize(unit)
 end
 
 function GladiusEx:GetAlwaysUpFrameForPlayers()
+    if select(2, IsInInstance()) ~= "arena" then return end
     local foundMax
     for i=1,2 do 
         if _G["AlwaysUpFrame"..i.."Text"] then
