@@ -513,6 +513,9 @@ function GladiusEx:CheckArenaSize(unit)
 end
 
 function GladiusEx:GetAlwaysUpFrameForPlayers()
+
+    if not IsActiveBattlefieldArena() then return nil end
+	
     local foundMax
     for i=1,2 do 
         if _G["AlwaysUpFrame"..i.."Text"] then
