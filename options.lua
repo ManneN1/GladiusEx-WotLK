@@ -17,7 +17,7 @@ GladiusEx.defaults = {
         superFS = true,
         specManaLimit = 15000,
         testUnits = {
-            ["arena1"] = { health = 350000, maxHealth = 350000, power = 180000, maxPower = 300000, powerType = 0, unitClass = "MAGE", unitRace = "Scourge", specID = 64 },
+            ["arena1"] = { health = 350000, maxHealth = 350000, power = 180000, maxPower = 300000, powerType = 0, unitClass = "MAGE", unitRace = "Undead", specID = 64 },
             ["arena2"] = { health = 275000, maxHealth = 320000, power = 10, maxPower = 100, powerType = 2, unitClass = "HUNTER", unitRace = "NightElf", specID = 253 },
             ["arena3"] = { health = 220000, maxHealth = 350000, power = 175000, maxPower = 300000, powerType = 0, unitClass = "DRUID", unitRace = "Worgen", specID = 105 },
             ["arena4"] = { health = 240000, maxHealth = 350000, power = 90, maxPower = 110, powerType = 3, unitClass = "ROGUE", unitRace = "Human", specID = 261 },
@@ -677,7 +677,7 @@ function GladiusEx:SetupOptions()
                         ["NightElf"] = "NightElf",
                         ["Orc"] = "Orc",
                         ["Pandaren"] = "Pandaren",
-                        ["Scourge"] = "Scourge",
+                        ["Undead"] = "Undead",
                         ["Tauren"] = "Tauren",
                         ["Troll"] = "Troll",
                         ["Worgen"] = "Worgen",
