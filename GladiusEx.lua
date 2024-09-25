@@ -1016,7 +1016,6 @@ function GladiusEx:UpdateUnitState(unit, stealth, dead)
         self.buttons[unit].unit_state = STATE_DEAD
         self.buttons[unit]:SetScript("OnUpdate", nil)
         self.buttons[unit]:SetAlpha(self.db[unit].deadAlpha)
-        self.buttons[unit]:Hide()
     elseif stealth then
         self.buttons[unit].unit_state = STATE_STEALTH
         self.buttons[unit]:SetScript("OnUpdate", nil)
