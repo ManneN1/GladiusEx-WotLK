@@ -1,4 +1,4 @@
-﻿GladiusEx = LibStub("AceAddon-3.0"):NewAddon("GladiusEx", "AceEvent-3.0", "AceTimer-3.0")
+GladiusEx = LibStub("AceAddon-3.0"):NewAddon("GladiusEx", "AceEvent-3.0", "AceTimer-3.0")
 
 local fn = LibStub("LibFunctional-1.0")
 --local LSR = LibStub("LibSpecRoster-1.0")
@@ -369,6 +369,9 @@ function GladiusEx:OnEnable()
 
     -- register the appropriate events
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+    -- register event for party member leavers 
+    self:RegisterEvent("CHAT_MSG_SYSTEM")
     
     -- this event works in all expansions from WotLK and forward
     self:RegisterEvent("ARENA_OPPONENT_UPDATE")
@@ -515,7 +518,7 @@ end
 function GladiusEx:GetAlwaysUpFrameForPlayers()
 
     if not IsActiveBattlefieldArena() then return nil end
-	
+    
     local foundMax
     for i=1,2 do 
         if _G["AlwaysUpFrame"..i.."Text"] then
@@ -741,6 +744,17 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
     end
 end
 
+function GladiusEx:CHAT_MSG_SYSTEM(event, msg)
+    if InCombatLockdown() then
+        local name = string.gsub(msg, " has left the battle", "")
+        for frame in pairs(self.buttons) do
+            if frame and string.find(UnitName(frame), name) and not UnitExists(frame) then
+                self:UpdateUnitState(frame, false, true)
+            end
+        end
+    end
+end
+
 function GladiusEx:ReloadFixTrackClassesSpecs(msg)
     -- Identify players
     for i = 1, self.seenPlayers do
@@ -766,7 +780,9 @@ function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
         self:UpdateUnitState(unit, false)
         self:ShowUnit(unit)
         self:CheckArenaSize(unit)
-    elseif type == "destroyed" or type == "unseen" then
+    elseif type == "destroyed" then
+        self:UpdateUnitState(unit, false, true)
+    elseif type == "unseen" then
         self:UpdateUnitState(unit, true)
     elseif type == "cleared" then
         if not self:IsTesting() then
@@ -993,13 +1009,14 @@ local function FrameRangeChecker_OnUpdate(f, elapsed)
     end
 end
 
-function GladiusEx:UpdateUnitState(unit, stealth)
+function GladiusEx:UpdateUnitState(unit, stealth, dead)
     if not self.buttons[unit] then return end
 
-    if UnitIsDeadOrGhost(unit) then
+    if UnitIsDeadOrGhost(unit) or dead then
         self.buttons[unit].unit_state = STATE_DEAD
         self.buttons[unit]:SetScript("OnUpdate", nil)
         self.buttons[unit]:SetAlpha(self.db[unit].deadAlpha)
+        self.buttons[unit]:Hide()
     elseif stealth then
         self.buttons[unit].unit_state = STATE_STEALTH
         self.buttons[unit]:SetScript("OnUpdate", nil)
