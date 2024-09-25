@@ -748,7 +748,7 @@ function GladiusEx:CHAT_MSG_SYSTEM(event, msg)
     if InCombatLockdown() then
         local name = string.gsub(msg, " has left the battle", "")
         for frame in pairs(self.buttons) do
-            if frame and string.find(UnitName(frame), name) and not UnitExists(frame) then
+            if frame and UnitName(frame) and string.find(UnitName(frame), name) and not UnitExists(frame) then
                 self:UpdateUnitState(frame, false, true)
             end
         end
