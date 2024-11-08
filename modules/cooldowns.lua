@@ -240,6 +240,7 @@ local function MakeGroupDb(settings)
 			["uncat"] =       { r = 1, g = 1, b = 1 },
 		},
 		cooldownsHideTalentsUntilDetected = true,
+		fixedOrder = true,
 	}
 	return fn.merge(defaults, settings or {})
 end
@@ -277,6 +278,7 @@ local g2_defaults = MakeGroupDb {
 	cooldownsIconUsingAlpha = 1.0,
 	cooldownsIconCooldownAlpha = 1.0,
 	cooldownsSpells = GetDefaultSpells()[2],
+	fixedOrder = true,
 }
 
 local Cooldowns = GladiusEx:NewGladiusExModule("Cooldowns",
@@ -534,6 +536,9 @@ end
 local function GetSpellSortScore(unit, group, spellid)
 	local db = Cooldowns:GetGroupDB(unit, group)
 
+	local tracked = GetUnitCooldownInfo(unit, spellid)
+	local fixedOrder = db.fixedOrder
+
 	local group_sortscore = unit_sortscore[unit]
 	if not group_sortscore then
 		group_sortscore = {}
@@ -553,7 +558,7 @@ local function GetSpellSortScore(unit, group, spellid)
 		spelldata = CT:GetCooldownData(spelldata.replaces)
 	end
 
-	if sortscore[spellid] then
+	if fixedOrder and sortscore[spellid] then
 		return sortscore[spellid]
 	end
 
@@ -562,6 +567,12 @@ local function GetSpellSortScore(unit, group, spellid)
 	local score = 0
 	local value = 2^30
 	local uncat_score = 0
+
+	if not fixedOrder
+		and (tracked == nil or tracked.used_start == nil or tracked.cooldown_end == nil or tracked.cooldown_end <= GetTime()) then
+		sortscore[spellid] = 1
+		return 1
+	end
 
 	for i = 1, #cat_priority do
 		local key = cat_priority[i]
@@ -1292,6 +1303,17 @@ function Cooldowns:MakeGroupOptions(unit, group)
 								desc = L["Toggle if the icons should show the spell tooltip when hovered"],
 								disabled = function() return not self:IsUnitEnabled(unit) end,
 								order = 15,
+							},
+							fixedOrder = {
+								type = "toggle",
+								name = L["Fixed order"],
+								desc = L["Toggle if the order of abilities should be fixed. Show on cd first otherwise"],
+								func = function()
+									self:SpellSortingChanged()
+									GladiusEx:UpdateFrames()
+								end,
+								disabled = function() return not self:IsUnitEnabled(unit) end,
+								order = 16,
 							},
 							sep2 = {
 								type = "description",
