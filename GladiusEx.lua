@@ -383,6 +383,7 @@ function GladiusEx:OnEnable()
     self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     
+
     self:RegisterEvent("UNIT_NAME_UPDATE")
     self:RegisterEvent("UNIT_HEALTH")
     self:RegisterEvent("UNIT_MAXHEALTH", "UNIT_HEALTH")
@@ -390,7 +391,9 @@ function GladiusEx:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
     self:RegisterEvent("UNIT_PET", "UpdateUnitGUID")
     self:RegisterEvent("UNIT_PORTRAIT_UPDATE", "UpdateUnitGUID")
+
     RC.RegisterCallback(self, RC.CHECKERS_CHANGED, "UpdateRangeCheckers")
+    
     self.dbi.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
     self.dbi.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
     self.dbi.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
@@ -476,14 +479,14 @@ function GladiusEx:GetArenaSize(min_size)
     local alwaysUpPlayers = self:GetAlwaysUpFrameForPlayers()
     
     local seen_enemy_units = 0
-	for i = 1, 5 do
-	if UnitExists("arena"..i) then
-	    seen_enemy_units = seen_enemy_units + 1
-	    end
-	end
+    for i = 1, 5 do
+    if UnitExists("arena"..i) then
+        seen_enemy_units = seen_enemy_units + 1
+        end
+    end
     
     -- try to guess the minimal possible (current) arena size
-    local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, GladiusEx:IsSpectating() and 1 or (GetNumPartyMembers() + 1), seen_enemy_units)
+    local min_possible_size = max(min_size or 0, self.seenPlayers or 0, alwaysUpPlayers or 0, self:IsSpectating() and 1 or (GetNumPartyMembers() + 1), seen_enemy_units)
 
     log("GetArenaSize", min_size, self.seenPlayers, GetNumPartyMembers(),
         " => ", min_possible_size)
@@ -550,12 +553,12 @@ function GladiusEx:UpdatePartyFrames()
     log("UpdatePartyFrames", group_members)
     self:UpdateAnchor("party")
 
-	local seen_enemy_units = 0
-	for i = 1,5 do
-	if UnitExists("arena"..i) then
-	    seen_enemy_units = seen_enemy_units + 1
-	    end
-	end
+    local seen_enemy_units = 0
+    for i = 1,5 do
+    if UnitExists("arena"..i) then
+        seen_enemy_units = seen_enemy_units + 1
+        end
+    end
 
     for i = 1, 5 do
         local unit = i == 1 and "player" or ("party" .. (i - 1))
@@ -579,7 +582,7 @@ function GladiusEx:UpdatePartyFrames()
             self:HideUnit(unit)
         end
     end
-	
+
     if self.db.base.hideSelf and not self:IsSpectating() then
         self:HideUnit("player")
     end
@@ -622,7 +625,7 @@ end
 function GladiusEx:UpdateFrames()
     log("UpdateFrames")
 
-	local spectate = self:GetModule("Spectate", true)
+    local spectate = self:GetModule("Spectate", true)
     if (not self:IsPartyShown() or (spectate and not spectate:IsSpectating())) and not self:IsArenaShown() then return end
 
     if not self.arena_size then
@@ -690,10 +693,10 @@ function GladiusEx:HideFrames()
 
     self.arena_parent:Hide()
     self.party_parent:Hide()
-	
-	self.arena_size = nil
-	self.knownSpecs = nil
-	self.seenPlayers = nil
+
+    self.arena_size = nil
+    self.knownSpecs = nil
+    self.seenPlayers = nil
 end
 
 function GladiusEx:IsPartyShown()
@@ -713,7 +716,7 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         
         log("ENABLE LOGGING")
         
-		self:ShowFrames()
+        self:ShowFrames()
         
         if not UnitAura("player", "Arena Preparation") then -- Inside (started)
             -- game is already started, try to identify spec and classes immediately
@@ -731,11 +734,11 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         -- performing the same activities as ARENA_OPPONENT_UPDATE for each unit
         self:UpdateFrames()
     else
-		local spectate = self:GetModule("Spectate", true)
-		if spectate and spectate:IsSpectating() then
-			spectate:StopSpectate()
-		end
-		
+        local spectate = self:GetModule("Spectate", true)
+        if spectate and spectate:IsSpectating() then
+            spectate:StopSpectate()
+        end
+        
         self:CheckFirstRun()
 
         if not self:IsTesting() then
@@ -795,7 +798,8 @@ end
 
 function GladiusEx:IdentifyUnitClass(unit, skipRefresh)
     if self.buttons[unit] and not self.buttons[unit].class and UnitExists(unit) and UnitClass(unit) then
-        self.buttons[unit].class = select(2, UnitClass(unit))
+        local _, class = UnitClass(unit)
+        self.buttons[unit].class = class
         
         if not skipRefresh then
             self:RefreshUnit(unit)
@@ -935,7 +939,7 @@ function GladiusEx:PLAYER_REGEN_ENABLED()
 end
 
 function GladiusEx:UNIT_NAME_UPDATE(event, unit)
-    if not self:IsHandledUnit(unit) then return end
+    if (not IsActiveBattlefieldArena() and not self:IsTesting()) or not self:IsHandledUnit(unit) then return end
 
     self:UpdateUnitGUID(event, unit)
     self:CheckArenaSize(unit)
@@ -1061,7 +1065,7 @@ end
 function GladiusEx:RefreshUnit(unit)
     if not self.buttons[unit] or self:IsTesting(unit) then return end
 
-    if self.buttons[unit].class == nil then
+    if not self.buttons[unit].class then
         self:IdentifyUnitClass(unit, true)
     end
     
@@ -1538,7 +1542,7 @@ function GladiusEx:UpdateUnit(unit)
     self:UpdateUnitPosition(unit)
 
     -- show the secure frame
-	
+
     if (self:IsTesting() and not self.db.base.locked) or self:IsSpectating() then
         button.secure:Hide()
     else
