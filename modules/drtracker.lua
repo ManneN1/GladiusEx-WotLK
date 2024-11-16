@@ -27,6 +27,8 @@ local defaults = {
     drTrackerGlossColor = { r = 1, g = 1, b = 1, a = 0.4 },
     drTrackerCooldown = true,
     drTrackerCooldownReverse = false,
+    drTrackerBorder = true,
+    drTrackerText = true,
     drFontSize = 18,
     drCategories = {},
     drIcons = {},
@@ -95,7 +97,11 @@ function DRTracker:CreateIcon(unit, drCat)
     f.texture = _G[f:GetName().."Icon"]
     f.normalTexture = _G[f:GetName().."NormalTexture"]
     f.cooldown = _G[f:GetName().."Cooldown"]
+
     f.text = f:CreateFontString(nil, "OVERLAY")
+
+    f.border = f:CreateTexture(nil, "OVERLAY")
+    f.border:SetAllPoints()
 
     self.frame[unit].tracker[drCat] = f
 end
@@ -112,6 +118,8 @@ function DRTracker:UpdateIcon(unit, drCat)
     tracked:SetNormalTexture([[Interface\AddOns\GladiusEx\media\gloss]])
     tracked.normalTexture:SetVertexColor(self.db[unit].drTrackerGlossColor.r, self.db[unit].drTrackerGlossColor.g,
         self.db[unit].drTrackerGlossColor.b, self.db[unit].drTrackerGloss and self.db[unit].drTrackerGlossColor.a or 0)
+
+    tracked.border:SetTexture([[Interface\Buttons\UI-Quickslot-Depress]])
 
     -- cooldown
     tracked.cooldown:SetReverse(self.db[unit].drTrackerCooldownReverse)
@@ -202,7 +210,7 @@ function DRTracker:DRFaded(unit, spellID, event)
             tracked.diminished = DRData:NextDR(tracked.diminished)
             
             -- K: Fallback edge-case early DR reset detection
-            if oldDiminished and oldDiminished == 0.25 and tracked.diminished == 0 then
+            if oldDiminished and oldDiminished == 0 and tracked.diminished == 0 then
                 tracked.diminished = 1
             end
         else
@@ -212,14 +220,27 @@ function DRTracker:DRFaded(unit, spellID, event)
     end
     
     -- K: This could happen if a _REMOVED is received before an _APPLIED/_REFRESH
-    -- when using showOnApply (e.g, due to joining late/spectate etc) 
+    -- when using showOnApply, or reversed if not using it (could happen due to late join)
     if not tracked.active then
         return 
     end
 
     local text, r, g, b = unpack(drTexts[tracked.diminished])
-    tracked.text:SetText(text)
-    tracked.text:SetTextColor(r,g,b)
+    
+    if self.db[unit].drTrackerText then
+        tracked.text:Show()
+        tracked.text:SetText(text)
+        tracked.text:SetTextColor(r,g,b)
+    else
+        tracked.text:Hide()
+    end
+    
+    if self.db[unit].drTrackerBorder then
+        tracked.border:SetVertexColor(r, g, b, 1)
+        tracked.border:Show()
+    else
+        tracked.border:Hide()
+    end
     
     local txtID = spellID 
     if self.db[unit].drIcons[drCat] ~= nil then
@@ -229,15 +250,13 @@ function DRTracker:DRFaded(unit, spellID, event)
     local _,_,texture = GetSpellInfo(txtID)
     tracked.texture:SetTexture(texture)
     
-    local time_left = DRData:GetResetTime()
-    tracked.reset_time = time_left + GetTime()
-
-    -- Show the cooldown swirl
     if self.db[unit].drTrackerCooldown then
         if useApplied and applied then -- K: Don't show swirl on _APPLIED/REFRESH when using showOnApply
             tracked.cooldown:SetCooldown(0, 0)
             tracked.cooldown:Hide()
         else
+            local time_left = DRData:GetResetTime()
+            tracked.reset_time = time_left + GetTime()
             tracked.cooldown:SetCooldown(GetTime(), time_left)
             tracked.cooldown:Show()
             --tracked.cooldown:SetBlingDuration(50)
@@ -267,7 +286,7 @@ function DRTracker:COMBAT_LOG_EVENT_UNFILTERED(_, ctime, eventType, cGUID, cName
     if eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH" or eventType == "SPELL_AURA_REMOVED" then
         local drCat = DRData:GetSpellCategory(spellID)
         if drCat and auraType == "DEBUFF" then
-            local unit = GetUnitIdByGUID(destGUID)
+            local unit = GladiusEx:GetUnitIdByGUID(destGUID)
             if unit and self.frame[unit] then
                 
                 -- Bug workaround: for some spells, when spectating (only), _REFRESH is fired right after _APPLIED causing bugs (on many servers)
@@ -308,10 +327,10 @@ function DRTracker:ClearData(cGUID, spellID, destGUID)
 end
 
 function DRTracker:HasFullDurationAura(unit, cGUID, spellID)
-    local fullDuration = GladiusEx.auraDurations[spellID]
+    local fullDuration = GladiusEx.Data.auraDurations[spellID]
     
     if fullDuration then
-        local srcUnit = GetUnitIdByGUID(cGUID)
+        local srcUnit = GladiusEx:GetUnitIdByGUID(cGUID)
 
         for i=1, 40 do
             local name, _, _, _, _, duration, _, unitCaster, _, _, sSpellID, srcGUID = UnitAura(unit, i, "HARMFUL")
@@ -405,7 +424,7 @@ function DRTracker:Test(unit)
     self:DRFaded(unit, 64058, "SPELL_AURA_REMOVED")
 
     self:DRFaded(unit, 118, "SPELL_AURA_APPLIED")
-	self:DRFaded(unit, 118, "SPELL_AURA_REMOVED")
+    self:DRFaded(unit, 118, "SPELL_AURA_REMOVED")
     self:DRFaded(unit, 118, "SPELL_AURA_APPLIED")
     self:DRFaded(unit, 118, "SPELL_AURA_REMOVED")
     
@@ -488,6 +507,13 @@ function DRTracker:GetOptions(unit)
                             width = "full",
                             order = 40,
                         },
+                        drTrackerBorder = {
+                            type = "toggle",
+                            name = L["DR-Colored Border"],
+                            desc = L["Adds a border to the icon the color of which will be the DR color"],
+                            disabled = function() return not self:IsUnitEnabled(unit) end,
+                            order = 34,
+                        },
                         drTrackerFrameLevel = {
                             type = "range",
                             name = L["Frame level"],
@@ -543,6 +569,13 @@ function DRTracker:GetOptions(unit)
                             name = L["Text size"],
                             desc = L["Text size of the DR text"],
                             min = 1, max = 20, step = 1,
+                            disabled = function() return not self:IsUnitEnabled(unit) or not self.db[unit].drTrackerText end,
+                            order = 10,
+                        },
+                        drTrackerText = {
+                            type = "toggle",
+                            name = L["DR Text"],
+                            desc = L["Show the current DR on the icon as text"],
                             disabled = function() return not self:IsUnitEnabled(unit) end,
                             order = 15,
                         },
