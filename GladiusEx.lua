@@ -43,6 +43,7 @@ local anchor_height = 40
 local STATE_NORMAL = 0
 local STATE_DEAD = 1
 local STATE_STEALTH = 2
+local STATE_LEFT = 3
 local RANGE_UPDATE_INTERVAL = 1 / 5
 
 -- debugging output
@@ -369,6 +370,9 @@ function GladiusEx:OnEnable()
 
     -- register the appropriate events
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    
+    -- register event for party member leavers 
+    self:RegisterEvent("CHAT_MSG_SYSTEM")
     
     -- this event works in all expansions from WotLK and forward
     self:RegisterEvent("ARENA_OPPONENT_UPDATE")
@@ -741,6 +745,17 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
     end
 end
 
+function GladiusEx:CHAT_MSG_SYSTEM(event, msg)
+    if InCombatLockdown() then
+	    local name = string.gsub(msg, " has left the battle", "")
+        for unit in pairs(self.buttons) do
+       	    if unit and UnitName(unit) and string.find(UnitName(unit), name) and not UnitExists(unit) then    
+                self:UpdateUnitState(unit, false, true)
+            end
+        end
+    end
+end
+
 function GladiusEx:ReloadFixTrackClassesSpecs(msg)
     -- Identify players
     for i = 1, self.seenPlayers do
@@ -766,7 +781,9 @@ function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
         self:UpdateUnitState(unit, false)
         self:ShowUnit(unit)
         self:CheckArenaSize(unit)
-    elseif type == "destroyed" or type == "unseen" then
+    elseif type == "destroyed" then
+        self:UpdateUnitState(unit, false, true)
+    elseif type == "unseen" then
         self:UpdateUnitState(unit, true)
     elseif type == "cleared" then
         if not self:IsTesting() then
@@ -860,7 +877,6 @@ function GladiusEx:IdentifyPlayerSpecialization()
     
     return specName
 end
-
 function GladiusEx:UNIT_AURA(event, unit)
     if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
     
@@ -993,10 +1009,14 @@ local function FrameRangeChecker_OnUpdate(f, elapsed)
     end
 end
 
-function GladiusEx:UpdateUnitState(unit, stealth)
+function GladiusEx:UpdateUnitState(unit, stealth, left)
     if not self.buttons[unit] then return end
 
-    if UnitIsDeadOrGhost(unit) then
+    if left or self.buttons[unit].unit_state == STATE_LEFT then 
+        self.buttons[unit].unit_state = STATE_LEFT 
+        self.buttons[unit]:SetScript("OnUpdate", nil)
+        self.buttons[unit]:SetAlpha(self.db[unit].deadAlpha)
+    elseif UnitIsDeadOrGhost(unit) then
         self.buttons[unit].unit_state = STATE_DEAD
         self.buttons[unit]:SetScript("OnUpdate", nil)
         self.buttons[unit]:SetAlpha(self.db[unit].deadAlpha)
