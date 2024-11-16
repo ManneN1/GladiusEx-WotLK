@@ -20,7 +20,8 @@
     <Include file="libs\LibDualSpec-1.0\LibDualSpec-1.0.lua"/>
     <Include file="libs\LibRangeCheck-2.0\LibRangeCheck-2.0\LibRangeCheck-2.0.lua"/>
     <Include file="libs\LibDispellable-1.0\LibDispellable-1.0.lua"/>
-    <Include file="libs\LibCooldownTracker-1.0\LibCooldownTracker-1.0.lua"/>
+    <Include file="libs\LibSpecDetection-1.0\LibSpecDetection-1.0.xml"/>
+    <Include file="libs\LibCooldownTracker-1.0\lib.xml"/>
     <Include file="libs\LibAuraInfo-1.0\lib.xml"/>
 <!--@end-no-lib-strip@-->
 </Ui>

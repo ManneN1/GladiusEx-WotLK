@@ -540,7 +540,7 @@ function ClassIcon:SetClassIcon(_, unit)
         left, right, top, bottom = 0, 1, 0, 1
         needs_crop = true
     elseif self.db[unit].classIconMode == "SPEC" and specID then
-        texture = GladiusEx.SPECIALIZATION_ICONS[specID]
+        texture = GladiusEx.Data.SPECIALIZATION_ICONS[specID]
         left, right, top, bottom = 0, 1, 0, 1
         needs_crop = true
     else

@@ -982,7 +982,7 @@ function Tags:GetBuiltinTags()
             if not specID or specID == 0 then
                 return ""
             end
-            return GladiusEx.specIDToName[specID]
+            return GladiusEx.Data.specIDToName[specID]
         end,
         ["spec:short"] = function(unit)
             local specID = GladiusEx:IsTesting(unit) and GladiusEx.testing[unit].specID or GladiusEx.buttons[unit].specID or 0
