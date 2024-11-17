@@ -1,0 +1,127 @@
+name: Release New Version
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on new tags prefixed with 'v'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to release (e.g., v1.0.0)'
+        required: true
+      branch:
+        description: 'Branch to use for release'
+        required: false
+        default: '' # Default is the branch triggering the workflow
+      draft:
+        description: 'Whether the release should be a draft'
+        required: false
+        default: 'false' # Default: Not a draft
+
+env:
+  PROJECT_NAME: "GladiusEx" # Change this to your project folder name in the .zip
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Determine branch and repo details
+      id: repo-details
+      run: |
+        # Determine branch
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.branch }}" ]; then
+          echo "BRANCH=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
+        else
+          echo "BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
+        fi
+
+        # Use GITHUB_REPOSITORY to determine repo name
+        REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d '/' -f 2)
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          TAG="${{ github.event.inputs.tag_name }}"
+        else
+          TAG=${{ github.ref_name }}
+        fi
+        FINAL_FOLDER="${PROJECT_NAME}"
+        echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
+        echo "TAG=${TAG}" >> $GITHUB_ENV
+        echo "FINAL_FOLDER=${FINAL_FOLDER}" >> $GITHUB_ENV
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ env.BRANCH }}
+        submodules: recursive # Ensures submodules are checked out
+
+    - name: Update submodules (without committing)
+      run: git submodule update --remote --merge
+
+    - name: Configure Git user
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Generate release notes
+      id: release-notes
+      run: |
+        # Get the last non-draft release tag
+        LAST_RELEASE=$(gh release list --exclude-drafts --limit 1 --json tagName --jq '.[].tagName')
+
+        if [ -z "$LAST_RELEASE" ]; then
+          echo "No previous release found; using initial commit."
+          COMMITS=$(git log --pretty=format:"* %s")
+        else
+          echo "Last release: $LAST_RELEASE"
+          COMMITS=$(git log $LAST_RELEASE..HEAD --pretty=format:"* %s")
+        fi
+
+        # Set release notes
+        echo "COMMITS=$COMMITS" >> $GITHUB_ENV
+
+    - name: Prepare release folder
+      run: |
+        # Create a clean folder for the final content
+        rm -rf ${{ env.FINAL_FOLDER }}
+        mkdir -p ${{ env.FINAL_FOLDER }}
+
+        # Copy the content of the repository to the final folder, excluding repo_name (e.g., GladiusEx-WotLK)
+        find . \
+          -type f \
+          ! -path "./.github/*" \
+          ! -name ".gitignore" \
+          ! -name ".gitattributes" \
+          ! -name ".gitmodules" \
+          ! -name "*.txt" \
+          ! -name "README*" \
+          ! -path "./.git/*" \
+          ! -path "./${{ env.REPO_NAME }}/*" \
+          -exec cp --parents {} ${{ env.FINAL_FOLDER }}/ \;
+
+        # Remove empty directories
+        find ${{ env.FINAL_FOLDER }} -type d -empty -delete
+
+    - name: Create release zip
+      run: |
+        # Zip only the FINAL_FOLDER directory, without any extra nesting
+        zip -r "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip" "${{ env.FINAL_FOLDER }}"
+
+    - name: Verify zip contents
+      run: |
+        echo "Contents of the zip file:"
+        unzip -l "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip"
+
+    - name: Create GitHub release with zip
+      run: |
+        gh release create "${{ env.TAG }}" "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip" \
+          --title "${{ env.PROJECT_NAME }}-${{ env.TAG }}" \
+          --notes "${{ env.COMMITS }}" \
+          --draft "${{ github.event.inputs.draft }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Verify GitHub release
+      run: |
+        gh release view "${{ env.TAG }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
