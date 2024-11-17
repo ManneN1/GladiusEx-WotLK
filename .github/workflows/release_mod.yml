@@ -1,0 +1,84 @@
+name: Release New Version
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on new tags prefixed with 'v'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to release (e.g., v1.0.0)'
+        required: true
+      branch:
+        description: 'Branch to use for release'
+        required: false
+        default: '' # Empty by default
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Determine branch to use
+      id: determine-branch
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.branch }}" ]; then
+          echo "BRANCH=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
+        else
+          echo "BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
+        fi
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ env.BRANCH }}
+        submodules: recursive # Ensures submodules are checked out
+
+    - name: Update submodules (without committing)
+      run: |
+        git submodule update --remote --merge
+
+    - name: Configure Git user
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Determine release version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "RELEASE_VERSION=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        fi
+
+    - name: Clean release folder
+      run: |
+        mkdir release
+        rsync -av ./ release/ \
+          --exclude='.git*' \
+          --exclude='README*' \
+          --exclude='.github' \
+          --exclude='submodules' \
+          --exclude='*.gitmodules' \
+          --exclude='*.gitignore'
+
+        find release/ -name ".git*" -exec rm -rf {} +
+        find release/ -name "README*" -exec rm -rf {} +
+        find release/ -name ".github" -exec rm -rf {} +
+        find release/ -name "*.gitmodules" -exec rm -rf {} +
+        find release/ -name "*.gitignore" -exec rm -rf {} +
+        find release/ -type d -name "submodules" -exec rm -rf {} +
+      shell: bash
+
+    - name: Create release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ env.RELEASE_VERSION }}
+        release_name: Release ${{ env.RELEASE_VERSION }}
+        draft: false
+        prerelease: false
+        assets: |
+          release/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
