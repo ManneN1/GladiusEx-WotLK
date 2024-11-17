@@ -155,10 +155,6 @@ function Spectate:StartSpectate()
         LibAuraInfo.RegisterCallback(self, "LibAuraInfo_AURA_UPDATE_REAL")
     end
 
-    -- CT.tracked_players = {}
-    CT.RegisterCallback(self, "LCT_CooldownsReset")
-    CT.RegisterCallback(self, "LCT_CooldownUsed")
-
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
     self:RegisterEvent("UNIT_TARGET")
     self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
@@ -199,12 +195,6 @@ end
 
 function Spectate:IsArenaUnit(unit)
     return arena_units[unit]
-end
-
-function Spectate:GetUnitByID(unitID)
-	if not self.units or not self.units[unitID] then return end
-	
-	return self.units[unitID]
 end
 
 function Spectate:GetUnitIdByGUID(guid)
@@ -251,7 +241,7 @@ function Spectate:IsInterruptImmune(unit)
         local _, _, _, _, _, _, expirationTime, _, _, _, spellID = self.UnitBuff(unit, i)
         
         
-        if (not expirationTime or expirationTime > t) and GladiusEx.auraImmunities[spellID] then
+        if (not expirationTime or expirationTime > t) and GladiusEx.Data.auraImmunities[spellID] then
             if spellID == 31821 or spellID == 19746 then -- Concentration Aura + Aura Mastery
                 if hasOther then
                     return true
@@ -451,12 +441,12 @@ end
 function Spectate:CheckUnitClass(unit)
     local guid = UnitGUID(unit)
     
-    local actual_unit = self:GetUnitByID(guid)
+    local actual_unit = self:GetUnitIdByGUID(guid)
     if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].classID then return end
     
     local _, className = UnitClass(unit)
     
-    local classID = GladiusEx.classIDByClassName[className]
+    local classID = GladiusEx.Data.classIDByClassName[className]
 
     self:SetUnitClass(actual_unit, classID)
 end
@@ -464,7 +454,7 @@ end
 function Spectate:CheckUnitName(unit)
     local guid = UnitGUID(unit)
     
-    local actual_unit = self:GetUnitByID(guid)
+    local actual_unit = self:GetUnitIdByGUID(guid)
     if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].name then return end
     
     local name = UnitName(unit)
@@ -479,12 +469,12 @@ end
 function Spectate:CheckUnitRace(unit)
     local guid = UnitGUID(unit)
     
-    local actual_unit = self:GetUnitByID(guid)
+    local actual_unit = self:GetUnitIdByGUID(guid)
     if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].raceID then return end
     
     race, enRace = UnitRace(unit)
     
-    local raceID = GladiusEx.raceNamesByID[enRace]
+    local raceID = GladiusEx.Data.raceNamesByID[enRace]
 
     if raceID then
         self:SetUnitRace(actual_unit, raceID)
@@ -494,7 +484,7 @@ end
 function Spectate:CheckUnitHealth(unit)
     local guid = UnitGUID(unit)
     
-    local actual_unit = self:GetUnitByID(guid)
+    local actual_unit = self:GetUnitIdByGUID(guid)
     if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].maxHP ~= 1 then return end
     
     self:SetUnitMaxHP(actual_unit, UnitHealthMax(unit))
@@ -504,7 +494,7 @@ end
 function Spectate:CheckUnitPower(unit)
     local guid = UnitGUID(unit)
     
-    local actual_unit = self:GetUnitByID(guid)
+    local actual_unit = self:GetUnitIdByGUID(guid)
     if not actual_unit or not self.units or not self.units[actual_unit] or self.units[actual_unit].maxPower ~= 1 then return end
     
     self:SetUnitPowerType(actual_unit, UnitPowerType(unit))
@@ -521,7 +511,7 @@ function Spectate.LibAuraInfo_AURA_UPDATE_REAL(self, event, dstGUID, filterType)
     if not dstGUID then return end
 
 
-    local unit = self:GetUnitByID(dstGUID)
+    local unit = self:GetUnitIdByGUID(dstGUID)
     if not unit or not self.units or not self.units[unit] then return end
     
     local container = filterType == "HARMFUL" and self.units[unit].debuffs or self.units[unit].buffs
@@ -545,7 +535,7 @@ function Spectate.LibAuraInfo_AURA_UPDATE_REAL(self, event, dstGUID, filterType)
         if (filterType == "HARMFUL" and isDebuff) or (filterType == "HELPFUL" and not isDebuff) then
             
             local name, rank, icon = GetSpellInfo(spellID)
-            local auraType = GladiusEx.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
+            local auraType = GladiusEx.Data.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
             
             local casterUnit = self:GetUnitIdByGUID(casterGUID) and self:GetUnitIdByGUID(casterGUID) or GladiusEx:GetUnitIdByGUID(casterGUID)
        
@@ -574,7 +564,7 @@ function Spectate.LibAuraInfo_AURA_APPLIED(self, event, dstGUID, spellID, srcGUI
     
     if not srcGUID then return end
 
-    local unit = self:GetUnitByID(dstGUID) -- self.units[destGUID] = unitID, self.units[unitID] = { ... data .. }
+    local unit = self:GetUnitIdByGUID(dstGUID) -- self.units[destGUID] = unitID, self.units[unitID] = { ... data .. }
 
     if not unit or not self.units or not self.units[unit] then return end
         
@@ -582,7 +572,7 @@ function Spectate.LibAuraInfo_AURA_APPLIED(self, event, dstGUID, spellID, srcGUI
     
     local _, count, _, duration, expiration, isDebuff = LibAuraInfo:GUIDAuraID(dstGUID, spellID, srcGUID)
     
-    local auraType = GladiusEx.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
+    local auraType = GladiusEx.Data.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
 
     self:AddUnitAura(unit, count, expiration, duration, spellID, auraType, isDebuff, srcGUID, true)
 end
@@ -591,7 +581,7 @@ function Spectate.LibAuraInfo_AURA_REFRESH(self, event, dstGUID, spellID, srcGUI
 
     if not srcGUID then return end
 
-    local unit = self:GetUnitByID(dstGUID)
+    local unit = self:GetUnitIdByGUID(dstGUID)
 
     if not unit or not self.units or not self.units[unit] then return end
     
@@ -600,7 +590,7 @@ function Spectate.LibAuraInfo_AURA_REFRESH(self, event, dstGUID, spellID, srcGUI
     
     local casterUnit = self:GetUnitIdByGUID(srcGUID) and self:GetUnitIdByGUID(srcGUID) or GladiusEx:GetUnitIdByGUID(srcGUID)
     
-    auraType = GladiusEx.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
+    auraType = GladiusEx.Data.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
     
     local container = isDebuff and self.units[unit].debuffs or self.units[unit].buffs
     
@@ -642,7 +632,7 @@ end
 function Spectate.LibAuraInfo_AURA_APPLIED_DOSE(self, event, dstGUID, spellID, srcGUID, spellSchool, auraType, stackCount, expirationTime)
     if not srcGUID then return end
 
-    local unit = self:GetUnitByID(dstGUID)
+    local unit = self:GetUnitIdByGUID(dstGUID)
 
     if not unit or not self.units or not self.units[unit] then return end
 
@@ -651,7 +641,7 @@ end
 
 function Spectate.LibAuraInfo_AURA_REMOVED(self, event, dstGUID, spellID, srcGUID, spellSchool, auraType, isDebuff, duration, expirationTime, stackCount)
     
-    local unit = self:GetUnitByID(dstGUID)
+    local unit = self:GetUnitIdByGUID(dstGUID)
     local name = GetSpellInfo(spellID)
 
     
@@ -659,7 +649,7 @@ function Spectate.LibAuraInfo_AURA_REMOVED(self, event, dstGUID, spellID, srcGUI
 
     if not unit or not self.units or not self.units[unit] then return end
     
-    auraType = GladiusEx.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
+    auraType = GladiusEx.Data.auraTypesByID[LibAuraInfo:GetDebuffType(spellID)]
     
     self:RemoveUnitAura(unit, stackCount, expirationTime, duration, spellID, auraType, isDebuff, srcGUID, true)
 end
@@ -668,7 +658,7 @@ function Spectate.LibAuraInfo_AURA_CLEAR(self, event, dstGUID)
     
     if not dstGUID then return end
 
-    local unit = self:GetUnitByID(dstGUID)
+    local unit = self:GetUnitIdByGUID(dstGUID)
 
     if not unit or not self.units or not self.units[unit] then return end
     
@@ -697,7 +687,7 @@ function Spectate:AddUnitAura(unit, stacks, expiration, duration, spellID, auraT
 		rank,
 		icon,
 		stacks, 
-		GladiusEx.auraTypesByID[auraType],
+		GladiusEx.Data.auraTypesByID[auraType],
 		duration,
 		expiration,
 		casterUnit,
@@ -799,7 +789,7 @@ function Spectate:ResetUnitAuras(unit, isFake)
                 rank,
                 icon,
                 stacks, 
-                GladiusEx.auraTypesByID[auraType],
+                GladiusEx.Data.auraTypesByID[auraType],
                 duration,
                 expiration,
                 casterUnit,
@@ -936,7 +926,7 @@ function Spectate:SetUnitMaxPower(unit, power)
 	self.units[unit].maxPower = tonumber(power)
 	
 	local powerType = self.units[unit].powerType
-	local name = GladiusEx.powerTypesByID[powerType]
+	local name = GladiusEx.Data.powerTypesByID[powerType]
 	
     self:FireEventForAllModules(unit, "UNIT_DISPLAYPOWER", unit)
     
@@ -952,7 +942,7 @@ function Spectate:SetUnitCurrentPower(unit, power)
 	self.units[unit].currentPower = tonumber(power)
 	
 	local powerType = self.units[unit].powerType
-	local name = GladiusEx.powerTypesByID[powerType]
+	local name = GladiusEx.Data.powerTypesByID[powerType]
 	
     self:FireEventForAllModules(unit, "UNIT_DISPLAYPOWER", unit)
     
@@ -982,10 +972,10 @@ end
 -- NAME / CLASS / RACE / STATUS
 
 function Spectate:SPELL_CAST_SUCCESS(srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, spellID)
-    local unit = self:GetUnitByID(srcGUID)
+    local unit = self:GetUnitIdByGUID(srcGUID)
     if not unit or not self.units or not self.units[unit] or self.units[unit].raceID then return end
     
-    local raceID = GladiusEx.raceIDsByRacialTraits[spellID]
+    local raceID = GladiusEx.Data.raceIDsByRacialTraits[spellID]
     if raceID then
         self:SetUnitRace(unit, raceID)
     end
@@ -1042,7 +1032,7 @@ function Spectate:SetUnitPet(unit, petID)
 end
 
 function Spectate:UNIT_DIED(srcGUID, srcName, srcFlags, dstGUID)
-    local unit = self:GetUnitByID(srcGUID)
+    local unit = self:GetUnitIdByGUID(srcGUID)
     if not unit or not self.units or not self.units[unit] then return end
     
     Spectate:ResetUnitAuras(unit, false)
@@ -1059,24 +1049,15 @@ function Spectate:AddUnitAbilityCooldown(unit, spellID, cooldownStart, cooldownD
     -- TODO: I could hack into LibCooldownTracker and set the exact cooldowns
     -- but this event is never really fired by most private servers
     
+	local guid = Spectate.UnitGUID(unit)
+	
     if CT:GetCooldownData(spellID) then
-        self:FireEventForAllModules(unit, "LCT_CooldownUsed", unit, spellID)
+        self:FireEventForAllModules(unit, "LCT_CooldownUsedByGUID", guid, spellID)
     end
 end
 
 function Spectate:ResetUnitAbilityCooldown(unit, spellID)
-    if not self.units or not self.units[unit] then return end
-	
-    spellID = tonumber(spellID)
-    
-    local guid = self:GetUnitIdByGUID(unit)
-    local unit = CT.tracked_players[unit] and unit or guid
-    
-    
-    if CT:GetCooldownData(spellID) then
-        CT.tracked_players[unit][spellID] = nil
-        self:FireEventForAllModules(unit, "LCT_CooldownReset", unit)
-    end
+    if true then return false end -- not supported (handled by LCT)
 end
 
 function Spectate:ResetUnitAbilityCooldowns(unit)
@@ -1115,29 +1096,6 @@ function Spectate:UpdateCooldownInfo(unit, spellID)
         self:FireEventForAllModules(unit, "LCT_CooldownUsed", unit)
     end
 end
-
-function Spectate.LCT_CooldownsReset(self, event, unit)
-    if not unit or not unit:find("-") then return end
-    
-    local guid = unit
-    unit = self:GetUnitIdByGUID(guid)
-    
-    if not unit or not self.units or not self.units[unit] then return end
-    
-    self:FireEventForAllModules(unit, "LCT_CooldownsReset", unit, true)
-end
-
-function Spectate.LCT_CooldownUsed(self, event, unit, spellID)
-    if not unit or not unit:find("x") then return end
-    
-    local guid = unit
-    unit = self:GetUnitIdByGUID(guid)
-    
-    if not unit or not self.units or not self.units[unit] then return end
-    
-    self:FireEventForAllModules(unit, "LCT_CooldownUsed", unit, spellID, true)
-end
-
 
 -- REPLACEMENT FUNCTIONS
 
@@ -1290,7 +1248,7 @@ function Spectate.UnitPowerType(unit)
 	
     local powerType = Spectate.units[unit].powerType 
     
-	return (powerType and powerType or 0), GladiusEx.powerTypesByID[(powerType and powerType or 0)]
+	return (powerType and powerType or 0), GladiusEx.Data.powerTypesByID[(powerType and powerType or 0)]
 end
 
 function Spectate.UnitPowerMax(unit)
@@ -1378,7 +1336,7 @@ function Spectate.UnitClass(unit)
 	
 	if not classID then return end
 
-	local className = GladiusEx.classNamesByID[classID]
+	local className = GladiusEx.Data.classNamesByID[classID]
 	return L[className], className, classID
 end
 
@@ -1389,7 +1347,7 @@ function Spectate.UnitRace(unit)
 	if not Spectate.units or not Spectate.units[unit] or not Spectate.units[unit].raceID then return L["Human"], "Human" end
 
     local raceID = Spectate.units[unit].raceID
-    local race = raceID and GladiusEx.raceNamesByID[raceID] or "Human"
+    local race = raceID and GladiusEx.Data.raceNamesByID[raceID] or "Human"
     local enRace = L[race]
     
 	return race, enRace
@@ -1403,7 +1361,7 @@ function Spectate.UnitFactionGroup(unit)
 
 	local raceID = Spectate.units[unit].raceID
 	
-	return raceID and GladiusEx.factionsByRaceIDs[raceID] or "Alliance" -- just pretend everyone's Alliance
+	return raceID and GladiusEx.Data.factionsByRaceIDs[raceID] or "Alliance" -- just pretend everyone's Alliance
 end
 
 function Spectate.UnitExists(unit)
@@ -1463,9 +1421,13 @@ end
 
 function Spectate.GetUnitCooldownInfo(unit, spellID)
 
-	if not Spectate:IsSpectating() or Spectate:IsArenaUnit(unit) then return CT:GetUnitCooldownInfo(unit, spellID) end
+    if not Spectate:IsSpectating() or Spectate:IsArenaUnit(unit) then 
+        return CT:GetUnitCooldownInfo(unit, spellID) 
+    end
 
-    return CT:GetUnitCooldownInfo(Spectate.UnitGUID(unit), spellID)
+
+    local guid = Spectate.UnitGUID(unit)
+    return CT:GetCooldownInfoByGUID(Spectate.UnitGUID(unit), spellID)
 end
 
 
@@ -1552,8 +1514,6 @@ Feel free to provide your feedback as an issue at https://github.com/ManneN1/Gla
         },
     }
 end
-
--- TODO: Fix options (just a text saying "no options, see party" for arena and some minor informative ones for party)
 
 Spectate.spectatorFunctions = {
     ["CHP"] = Spectate.SetUnitCurrentHP,

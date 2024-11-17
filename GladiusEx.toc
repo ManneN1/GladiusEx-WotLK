@@ -10,9 +10,10 @@ localization\enUS.lua
 localization\locales.lua
 
 GladiusEx.lua
+Data_TBC.lua
+Data_WOTLK.lua
 
 options.lua
-Data.lua
 
 modules\spectate.lua
 modules\alerts.lua

@@ -5,6 +5,7 @@ local fn = LibStub("LibFunctional-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("GladiusEx")
 local RC = LibStub("LibRangeCheck-2.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local LSD = LibStub("LibSpecDetection-1.0")
 
 -- upvalues
 local select, type, pairs, tonumber, wipe = select, type, pairs, tonumber, wipe
@@ -265,9 +266,6 @@ function GladiusEx:OnInitialize()
     UnitPowerType = spectate and spectate.UnitPowerType or UnitPowerType
     UnitPowerMax = spectate and spectate.UnitPowerMax or UnitPowerMax
         
-    -- spec detection
-    self.specSpells = self:GetSpecList()
-
     -- buttons
     self.buttons = {}
 
@@ -376,13 +374,6 @@ function GladiusEx:OnEnable()
     
     -- this event works in all expansions from WotLK and forward
     self:RegisterEvent("ARENA_OPPONENT_UPDATE")
-	
-    -- spec detection
-    self:RegisterEvent("UNIT_AURA")    
-    self:RegisterEvent("UNIT_SPELLCAST_START")
-    self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-    self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-    
 
     self:RegisterEvent("UNIT_NAME_UPDATE")
     self:RegisterEvent("UNIT_HEALTH")
@@ -397,6 +388,8 @@ function GladiusEx:OnEnable()
     self.dbi.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
     self.dbi.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
     self.dbi.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
+	
+    LSD.RegisterCallback(self, "SPEC_DETECTED", "IdentifyUnitSpecialization")
 end
 
 local first_run = false
@@ -423,6 +416,8 @@ end
 function GladiusEx:OnDisable()
     self:UnregisterAllEvents()
     --LSR.UnregisterAllMessages(self)
+	
+    LSD.UnregisterAllEvents()
     self.dbi.UnregisterAllEvents(self)
     self:HideFrames()
 end
@@ -563,6 +558,7 @@ function GladiusEx:UpdatePartyFrames()
     for i = 1, 5 do
         local unit = i == 1 and "player" or ("party" .. (i - 1))
         if group_members >= i then
+
             self:UpdateUnit(unit)
             self:UpdateUnitState(unit, false)
             self:ShowUnit(unit)
@@ -724,12 +720,6 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         end
         -- if seen is nil the game hasn't started yet
         
-        -- monitor for class/spec
-        self:RegisterEvent("UNIT_AURA")
-        self:RegisterEvent("UNIT_SPELLCAST_START")
-        self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-        self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-
         -- This will call CheckArenaSize and then iterate over all party members / enemies based on self.arena_size
         -- performing the same activities as ARENA_OPPONENT_UPDATE for each unit
         self:UpdateFrames()
@@ -763,16 +753,13 @@ function GladiusEx:ReloadFixTrackClassesSpecs(msg)
     -- Identify players
     for i = 1, self.seenPlayers do
         self:IdentifyUnitClass("arena"..i)
-        self:IdentifyUnitSpecialization("arena"..i)
         
         if self.seenPlayers > 1 then
             self:IdentifyUnitClass("party"..i)
-            self:IdentifyUnitSpecialization("party"..i)
         end
     end
     
     self:IdentifyUnitClass("player")
-    self:IdentifyUnitSpecialization("player")
 end
 
 function GladiusEx:ARENA_OPPONENT_UPDATE(event, unit, type)
@@ -807,106 +794,43 @@ function GladiusEx:IdentifyUnitClass(unit, skipRefresh)
     end
 end
 
-function GladiusEx:IdentifyUnitSpecialization(unit, name)
-    if not unit or not self.buttons[unit] then return end
-    
-    if self.knownSpecs and self.arena_size and self.knownSpecs == self.arena_size * 2 and not self:IsTesting() then
-        self:UnregisterEvent("UNIT_AURA")
-        self:UnregisterEvent("UNIT_SPELLCAST_START")
-        self:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-        self:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-        return
-    end
-    
-    local specID
-    
-    if (self.buttons[unit].specID == nil) then
-        if name then
-            if type(name) == "number" then
-                name = self:SafeGetSpellName(name)
-            end
-            specID = self.specSpells[name]
+function GladiusEx:IdentifyUnitSpecialization(event, unit, guid, specID)
+	
+	if self:IsSpectating() then
+		if not guid then return end
+		
+		unit = Spectate:GetUnitIdByGUID(guid)
+	end
+	
+	if guid and not unit then
+		unit = self:GetUnitIdByGUID(guid)
+	end
+	if unit and not guid then
+		guid = UnitGUID(unit)
+	end
+	if not unit and guid and UnitGUID("player") == guid then
+		unit = "player"
+	end
 
-        --elseif UnitIsUnit(unit, "player") and not self:IsSpectating() then
-        --   specname = self:IdentifyPlayerSpecialization()
-        else
-            local _, class = UnitClass(unit)
-            if class and UnitPowerType(unit) == 0 then
-                local p = UnitPowerMax(unit)
-                local limit = self.db.base.specManaLimit
-                if p > 2 then -- 0 if not exists and 1 if spectating and not exists
-                    if class == "PALADIN" and p > limit then
-                        specID = 65 -- Holy
-                    elseif class == "DRUID" and p < limit then
-                        specID = 103 -- Feral
-                    elseif class == "SHAMAN" and p < limit then
-                        specID = 263 -- Enhancement
-                    end
-                end
-            end
-            for index = 1, 40 do
-                local  auraName, _, _, _, _, _, _, unitCaster, _ = UnitAura(unit, index, "HELPFUL")
-                
-                if not auraName then break end
-                
-                if unitCaster and unitCaster == unit then
-                    specID = self.specSpells[auraName]
-                    name = auraName
-                    if specID then
-                        break
-                    end
-                else
-                    self:IdentifyUnitSpecialization(unitCaster, auraName)
-                end
-            end
-        end
+	if not unit or not self.buttons[unit] or self.buttons[unit].specID then return end
 
-        if specID and self.buttons[unit] then
-            self.buttons[unit].specID = specID
-            self.knownSpecs = self.knownSpecs and self.knownSpecs + 1 or 1
-            self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
-        end
-    end
-end
+	if not specID then
+		specID = LSD:GetSpecID(guid)
+	end
 
-function GladiusEx:IdentifyPlayerSpecialization()
-    local maxPoints, specName = 0, nil
-    for i = 1,3 do
-        local tmpname, _, numPoints = GetTalentTabInfo(i)
-        if numPoints > maxPoints then
-            specName = tmpname
-            maxPoints = numPoints
-        end
-    end
-    
-    return specName
-end
-function GladiusEx:UNIT_AURA(event, unit)
-    if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
-    
-    self:IdentifyUnitClass(unit)
-    self:IdentifyUnitSpecialization(unit)
-end
+	if not unit or not self.buttons[unit] then return end
 
-function GladiusEx:UNIT_SPELLCAST_SUCCEEDED(event, unit, spellID)
-    if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
-
-    self:IdentifyUnitClass(unit)
-    self:IdentifyUnitSpecialization(unit, spellID)
-end
-
-function GladiusEx:UNIT_SPELLCAST_START(event, unit)
-    if not self:IsArenaUnit(unit) and not self:IsPartyUnit(unit) then return end
-
-    self:IdentifyUnitClass(unit)  
-       
-    local name = UnitCastingInfo(unit) and UnitCastingInfo(unit) or UnitChannelInfo(unit)
-    
-    self:IdentifyUnitSpecialization(unit, name)
-end
-
-function GladiusEx:UNIT_SPELLCAST_CHANNEL_START(event, unit)
-    self:UNIT_SPELLCAST_START(event, unit)
+	if specID and not self.buttons[unit].specID then
+		
+		if not self.buttons[unit].class then
+			self:IdentifyUnitClass(unit, true)
+		end
+		
+		self.buttons[unit].specID = specID
+		self:SendMessage("GLADIUSEX_SPEC_UPDATE", unit)
+		
+		self:RefreshUnit(unit)
+	end
 end
 
 function GladiusEx:PARTY_MEMBERS_CHANGED()
@@ -1068,11 +992,11 @@ function GladiusEx:RefreshUnit(unit)
     if not self.buttons[unit].class then
         self:IdentifyUnitClass(unit, true)
     end
+	
+	if not self.buttons[unit].specID then
+		self:IdentifyUnitSpecialization(nil, unit)
+	end
     
-    if self.buttons[unit].class and self.buttons[unit].specID == nil then
-        self:IdentifyUnitSpecialization(unit)
-    end
-
     -- refresh modules
     for n, m in self:IterateModules() do
         if self:IsModuleEnabled(unit, n) and m.Refresh then
