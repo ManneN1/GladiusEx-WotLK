@@ -19,3 +19,8 @@ Supports spectating based on [ArenaSpectator](https://github.com/azerothcore/aze
 The "Incoming" Absorb/Heal portion of the healthbar module has been removed as the underlying API is non-existent in WotLK.
 
 The "Cooldowns" module is only in beta mode. It works, but some abilities might be missing / having an incorrect spell ID (thus not working) / have an incorrect CD / be missing some conditional (e.g., lower CD if some other talent that we know is picked). Feel free to report specific improvements that can be done, or create a pull request.
+
+# Screenshots
+
+![image](https://github.com/user-attachments/assets/b9ee8b37-3d69-4e1d-9ac2-0ade5555d613)
+
