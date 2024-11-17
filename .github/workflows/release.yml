@@ -53,75 +53,100 @@ jobs:
       with:
         ref: ${{ env.BRANCH }}
         submodules: recursive # Ensures submodules are checked out
+        fetch-depth: 0 # Fetch all history and tags
 
-    - name: Update submodules (without committing)
-      run: git submodule update --remote --merge
+    - name: Update submodules to latest release
+      run: |
+        git submodule foreach --recursive '
+          echo "Processing submodule: $name"
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No tags found for $name; using latest commit."
+            git checkout HEAD
+          else
+            echo "Checking out latest release tag: $LATEST_TAG"
+            git checkout $LATEST_TAG
+          fi
+        '
 
     - name: Configure Git user
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Generate release notes
-      id: release-notes
+    - name: Prepare release folder
+      run: |
+        # Create a clean folder for the project
+        rm -rf ${{ env.FINAL_FOLDER }}
+        mkdir -p ${{ env.FINAL_FOLDER }}
+
+        # Use rsync to copy all repository content into FINAL_FOLDER, while excluding unwanted files
+        rsync -av --exclude='.github/' --exclude='*.txt' --exclude='README*' \
+              --exclude='.git*' --exclude='.gitmodules' ./ ${{ env.FINAL_FOLDER }}/
+
+        # Check for any nested duplication of FINAL_FOLDER and remove it
+        if [ -d "${{ env.FINAL_FOLDER }}/${{ env.FINAL_FOLDER }}" ]; then
+          echo "Removing nested duplicate folder..."
+          rm -rf ${{ env.FINAL_FOLDER }}/${{ env.FINAL_FOLDER }}
+        fi
+
+    - name: Create a zip file with a clean structure
+      run: |
+        # Create a release folder and move FINAL_FOLDER contents into PROJECT_NAME
+        mkdir -p release/${{ env.PROJECT_NAME }}
+        mv ${{ env.FINAL_FOLDER }}/* release/${{ env.PROJECT_NAME }}/
+        rm -rf ${{ env.FINAL_FOLDER }}
+
+        # Create the zip from the release folder, keeping the desired structure
+        cd release
+        zip -r "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip" "${{ env.PROJECT_NAME }}"
+        mv "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip" ../
+
+        # Cleanup the release folder after zipping
+        cd ..
+        rm -rf release
+
+
+    - name: Generate release notes file
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Get the last non-draft release tag
         LAST_RELEASE=$(gh release list --exclude-drafts --limit 1 --json tagName --jq '.[].tagName')
 
         if [ -z "$LAST_RELEASE" ]; then
           echo "No previous release found; using initial commit."
-          COMMITS=$(git log --pretty=format:"* %s")
+          echo -e "Content:\n\nInitial release." > release-notes.txt
         else
           echo "Last release: $LAST_RELEASE"
-          COMMITS=$(git log $LAST_RELEASE..HEAD --pretty=format:"* %s")
+          echo -e "Content:\n" > release-notes.txt
+          git log $LAST_RELEASE..HEAD --pretty=format:"* %s" >> release-notes.txt
         fi
-
-        # Set release notes
-        echo "COMMITS=$COMMITS" >> $GITHUB_ENV
-
-    - name: Prepare release folder
-      run: |
-        # Create a clean folder for the final content
-        rm -rf ${{ env.FINAL_FOLDER }}
-        mkdir -p ${{ env.FINAL_FOLDER }}
-
-        # Copy the content of the repository to the final folder, excluding repo_name (e.g., GladiusEx-WotLK)
-        find . \
-          -type f \
-          ! -path "./.github/*" \
-          ! -name ".gitignore" \
-          ! -name ".gitattributes" \
-          ! -name ".gitmodules" \
-          ! -name "*.txt" \
-          ! -name "README*" \
-          ! -path "./.git/*" \
-          ! -path "./${{ env.REPO_NAME }}/*" \
-          -exec cp --parents {} ${{ env.FINAL_FOLDER }}/ \;
-
-        # Remove empty directories
-        find ${{ env.FINAL_FOLDER }} -type d -empty -delete
-
-    - name: Create release zip
-      run: |
-        # Zip only the FINAL_FOLDER directory, without any extra nesting
-        zip -r "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip" "${{ env.FINAL_FOLDER }}"
 
     - name: Verify zip contents
       run: |
         echo "Contents of the zip file:"
         unzip -l "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip"
 
-    - name: Create GitHub release with zip
+    - name: Create GitHub release with zip and notes file
       run: |
-        gh release create "${{ env.TAG }}" "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip" \
-          --title "${{ env.PROJECT_NAME }}-${{ env.TAG }}" \
-          --notes "${{ env.COMMITS }}" \
-          --draft "${{ github.event.inputs.draft }}"
+        if [ "${{ github.event.inputs.draft }}" == "true" ]; then
+          gh release create "${{ env.TAG }}" \
+            --title "${{ env.PROJECT_NAME }}-${{ env.TAG }}" \
+            --notes-file release-notes.txt \
+            --draft \
+            "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip"
+        else
+          gh release create "${{ env.TAG }}" \
+            --title "${{ env.PROJECT_NAME }}-${{ env.TAG }}" \
+            --notes-file release-notes.txt \
+            "${{ env.PROJECT_NAME }}-${{ env.TAG }}.zip"
+        fi
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Verify GitHub release
       run: |
         gh release view "${{ env.TAG }}"
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
