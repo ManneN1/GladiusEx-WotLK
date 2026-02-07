@@ -26,5 +26,6 @@ The "Cooldowns" module is only in beta mode. It works, but some abilities might 
 
 # Screenshots
 
-![image](https://github.com/user-attachments/assets/b9ee8b37-3d69-4e1d-9ac2-0ade5555d613)
+<img width="532" height="388" alt="image" src="https://github.com/user-attachments/assets/7aa40e12-895e-40c3-8aa0-a9a698a22f0c" />
+
 
