@@ -12,7 +12,7 @@ To download the addon, go to the [release page](https://github.com/ManneN1/Gladi
 
 The Addon is to be placed in /Interface/AddOns (relative the WoW root folder).
 
-**Do not use the Code -> Download ZIP - it will not work. It's only for developers who know how to use git submodules.**
+**Do not use the Code -> Download ZIP option, it will not work. It's only for developers who know how to use git submodules.**
 
 # Notes
 
