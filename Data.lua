@@ -547,7 +547,7 @@ GladiusEx.auraImmunities = {
 -- WotLK: Leaving this empty for now, need to sit down and go through all the auras in DRList-1.0
 -- There's some guidance available in LibAuras, but it doesn't account for things like
 -- talents and most importantly combo points (Maim/Kidney Shot), so some extra care is needed
-GladiusEx.auraDurations = { 
+GladiusEx.Data.auraDurations = {
   --[408] = 6,     -- Kidney Shot (varies)
   --[22570] = 5,   -- Maim (varies)
 }
