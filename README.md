@@ -8,7 +8,7 @@ The AddOn will not work on Classic WotLK, it will only work on the original WotL
 
 To download the addon, go to the [release page](https://github.com/ManneN1/GladiusEx-WotLK/releases/) and download the latest version as a zip file. Unzip it.
 
-*Note: If you're daring, download the pre-release version and provide feedback.*
+Note: I've now made version 2.0 the **Latest** version, longer pre-release, but it is relatively untested. If you find issues with it feel free to open a ticket (see below). You can fall back to the latest v1.0 version on the release page in case version 2.0.x is giving you issues.
 
 The Addon is to be placed in /Interface/AddOns (relative the WoW root folder).
 
