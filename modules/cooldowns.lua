@@ -204,14 +204,22 @@ local function GetHeaderUnit(unit)
 end
 
 function Cooldowns:OnEnable()
-	--CT.RegisterCallback(self, "LCT_CooldownUsed")
-	CT.RegisterCallback(self, "LCT_CooldownUsedByGUID")
-	
-	--CT.RegisterCallback(self, "LCT_CooldownsReset")
-	CT.RegisterCallback(self, "LCT_CooldownsResetByGUID")
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", "UpdateTracking")
+	self:UpdateTracking()
 
 	self:RegisterEvent("UNIT_NAME_UPDATE")
 	self:RegisterMessage("GLADIUSEX_SPEC_UPDATE")
+end
+
+function Cooldowns:UpdateTracking()
+	-- These frames are only used in arenas (including spectator mode).
+	-- Keep world combat from populating the shared cooldown cache.
+	if select(2, IsInInstance()) == "arena" then
+		CT.RegisterCallback(self, "LCT_CooldownUsedByGUID")
+		CT.RegisterCallback(self, "LCT_CooldownsResetByGUID")
+	else
+		CT.UnregisterAllCallbacks(self)
+	end
 end
 
 function Cooldowns:OnDisable()

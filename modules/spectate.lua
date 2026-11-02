@@ -166,6 +166,9 @@ end
 
 function Spectate:StopSpectate()
     self.isSpectating = false
+    for unit in pairs(self.units or {}) do
+        self:CancelUnitAuraTimers(unit)
+    end
     self.units = nil
     self.initUnits = {}
 
@@ -721,25 +724,20 @@ function Spectate:RemoveUnitAura(unit, stacks, expirationTime, duration, spellID
     if not casterGUID or not self.units or not self.units[unit] then return end
 	
 	local container = isDebuff and self.units[unit].debuffs or self.units[unit].buffs
-    local name = GetSpellInfo(spellID)
-	
-    local auras = {}
-    for i, aura in pairs(container) do
-        if aura[11] == spellID then
-            if (not aura[7] and not expirationTime) or (aura[7] and not expirationTime) or (aura[7] and expirationTime and aura[7] == expirationTime) then
-                if aura[12] and aura[12] == srcGUID then
-                    auras = { [1] = { aura = aura, index = i } }
-                    break
-                elseif #auras == 0 then
-                    table.insert(auras, { aura = aura, index = i })
-                end
+    local index
+    for i, aura in ipairs(container) do
+        if aura[11] == spellID and (not expirationTime or aura[7] == expirationTime) then
+            if aura[12] == casterGUID then
+                index = i
+                break
+            elseif not index then
+                index = i
             end
         end
     end
 
-    if #auras ~= 0 then
-        local aura = auras[1].aura
-        local index = auras[1].index
+    if index then
+        local aura = container[index]
         
         if aura.timer then
             GladiusEx:CancelTimer(aura.timer)
@@ -751,10 +749,24 @@ function Spectate:RemoveUnitAura(unit, stacks, expirationTime, duration, spellID
     end
 end
 
+function Spectate:CancelUnitAuraTimers(unit)
+    if not self.units or not self.units[unit] then return end
+    for c=1,2 do
+        local container = c == 1 and self.units[unit].buffs or self.units[unit].debuffs
+        for _, aura in ipairs(container) do
+            if aura.timer then
+                GladiusEx:CancelTimer(aura.timer)
+                aura.timer = nil
+            end
+        end
+    end
+end
+
 function Spectate:ResetUnitAuras(unit, isFake)
 	if not self.units or not self.units[unit] then return end
 	
     if not isFake then
+        self:CancelUnitAuraTimers(unit)
         self.units[unit].debuffs = {}
         self.units[unit].buffs = {}
 	else
@@ -762,12 +774,12 @@ function Spectate:ResetUnitAuras(unit, isFake)
         
         -- get rid of all non-server auras
         for c=1,2 do 
-            local container = i == 1 and self.units[unit].buffs or self.units[unit].debuffs
-            for i=1, 40 do
-                local name, _, _, _, _, _, _, _, _, _, _, _, isFake = container[i]
-                if not name then break end
-                
-                if isFake then
+            local container = c == 1 and self.units[unit].buffs or self.units[unit].debuffs
+            for i=#container, 1, -1 do
+                if container[i][13] then
+                    if container[i].timer then
+                        GladiusEx:CancelTimer(container[i].timer)
+                    end
                     table.remove(container, i)
                 end
             end

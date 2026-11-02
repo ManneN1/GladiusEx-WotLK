@@ -51,9 +51,8 @@ function PowerBar:OnDisable()
     self:UnregisterAllEvents()
     for unit in pairs(self.frame) do
         self.frame[unit]:SetAlpha(0)
-        
+        self.frame[unit]:Hide()
     end
-    GladiusEx:CancelTimer(self.frame["player"].timer)
 end
 
 function PowerBar:GetAttachType(unit)
@@ -149,10 +148,17 @@ function PowerBar:CreateBar(unit)
     self.frame[unit].background = self.frame[unit]:CreateTexture("GladiusEx" .. self:GetName() .. unit .. "Background", "BACKGROUND")
     self.frame[unit].background:SetAllPoints()
     
-    if UnitIsUnit("player", unit) and self.frame[unit].timer == nil then
-        self.frame[unit].timer = GladiusEx:ScheduleRepeatingTimer(function(unit) 
-            self:UpdatePowerEvent("GLADIUSEX_UNIT_POWER_FREQUENT", unit)
-        end, 0.1, unit)
+    if unit == "player" then
+        -- OnUpdate stops automatically when this bar or its parent is hidden.
+        self.frame[unit]:SetScript("OnUpdate", function(frame, elapsed)
+            frame.powerElapsed = (frame.powerElapsed or 0) + elapsed
+            if frame.powerElapsed >= 0.1 then
+                frame.powerElapsed = 0
+                if self:IsEnabled() and not GladiusEx:IsTesting(unit) then
+                    self:UpdatePowerEvent("GLADIUSEX_UNIT_POWER_FREQUENT", unit)
+                end
+            end
+        end)
     end
 end
 

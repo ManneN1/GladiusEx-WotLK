@@ -51,6 +51,8 @@ local RANGE_UPDATE_INTERVAL = 1 / 5
 local log_frame
 local log_table
 local logging = false
+local MAX_LOG_SESSIONS = 5
+local MAX_LOG_LINES = 2000
 local function log(...)
     if not GladiusEx:IsDebugging() then return end
     if not log_frame then
@@ -69,7 +71,7 @@ local function log(...)
         log_frame:SetFading(false)
         log_frame:SetJustifyH("LEFT")
         log_frame:SetIndentedWordWrap(true)
-        log_frame:SetMaxLines(10000)
+        log_frame:SetMaxLines(MAX_LOG_LINES)
         log_frame:SetBackdropColor(1, 1, 1, 0.2)
         log_frame.starttime = GetTime()
 
@@ -78,6 +80,9 @@ local function log(...)
     local p = ...
     if p == "ENABLE LOGGING" then
         GladiusEx.db.base.log = GladiusEx.db.base.log or {}
+        while #GladiusEx.db.base.log >= MAX_LOG_SESSIONS do
+            table.remove(GladiusEx.db.base.log, 1)
+        end
         log_table = { date("%c", time()) }
         table.insert(GladiusEx.db.base.log, log_table)
         logging = true
@@ -88,7 +93,7 @@ local function log(...)
 
     local msg = string.format("[%.1f] %s", GetTime() - log_frame.starttime, strjoin(" ", tostringall(...)))
 
-    if logging then
+    if logging and #log_table < MAX_LOG_LINES then
         table.insert(log_table, msg)
     end
 
