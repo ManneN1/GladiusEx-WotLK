@@ -1,4 +1,4 @@
-﻿GladiusEx = LibStub("AceAddon-3.0"):NewAddon("GladiusEx", "AceEvent-3.0", "AceTimer-3.0")
+GladiusEx = LibStub("AceAddon-3.0"):NewAddon("GladiusEx", "AceEvent-3.0", "AceTimer-3.0")
 
 local fn = LibStub("LibFunctional-1.0")
 --local LSR = LibStub("LibSpecRoster-1.0")
@@ -316,6 +316,7 @@ end
 
 function GladiusEx:CheckEnableDisableModule(name)
     local mod = self:GetModule(name)
+    if not self.runtimeActive and name ~= "Spectate" then return end
 
     -- hide module if it is being disabled
     if mod:IsEnabled() and mod.Reset then
@@ -348,29 +349,7 @@ function GladiusEx:EnableModules()
     end
 end
 
-function GladiusEx:OnEnable()
-    -- create frames
-    -- anchor & background
-    self.party_parent = CreateFrame("Frame", "GladiusExPartyFrame", UIParent)
-    self.arena_parent = CreateFrame("Frame", "GladiusExArenaFrame", UIParent)
-    self.party_parent:Hide()
-    self.arena_parent:Hide()
-
-    self.arena_anchor, self.arena_background = self:CreateAnchor("arena")
-    self.party_anchor, self.party_background = self:CreateAnchor("party")
-
-    -- update roster
-    self:UpdateAllGUIDs()
-
-    -- update range checkers
-    self:UpdateRangeCheckers()
-
-    -- enable modules
-    self:EnableModules()
-
-    -- init options
-    self:SetupOptions()
-
+function GladiusEx:RegisterRuntimeEvents()
     -- register the appropriate events
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     
@@ -395,6 +374,80 @@ function GladiusEx:OnEnable()
     self.dbi.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
 	
     LSD.RegisterCallback(self, "SPEC_DETECTED", "IdentifyUnitSpecialization")
+end
+
+function GladiusEx:RegisterActivationEvents()
+    self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("PLAYER_REGEN_ENABLED")
+end
+
+function GladiusEx:OnEnable()
+    self.runtimeActive = false
+    for name, module in self:IterateModules() do
+        module:SetEnabledState(name == "Spectate")
+    end
+    self:RegisterActivationEvents()
+    if select(2, IsInInstance()) == "arena" then
+        self:PLAYER_ENTERING_WORLD()
+    end
+end
+
+function GladiusEx:EnsureRuntime()
+    if self.runtimeActive then return end
+    self.runtimeActive = true
+    if not self.runtimeInitialized then
+        self:InitializeRuntime()
+        self.runtimeInitialized = true
+    else
+        self:RegisterRuntimeEvents()
+        self:UpdateAllGUIDs()
+        self:UpdateRangeCheckers()
+        self:EnableModules()
+    end
+    self:RegisterActivationEvents()
+end
+
+function GladiusEx:SuspendRuntime()
+    if not self.runtimeActive or InCombatLockdown() then return end
+    self.runtimeActive = false
+    for name, module in self:IterateModules() do
+        if name ~= "Spectate" then
+            self:DisableModule(name)
+            if module.CancelAllTimers then module:CancelAllTimers() end
+        end
+    end
+    self:CancelAllTimers()
+    RC.UnregisterAllCallbacks(self)
+    LSD.UnregisterAllCallbacks(self)
+    self:UnregisterAllEvents()
+    self:RegisterActivationEvents()
+end
+
+function GladiusEx:InitializeRuntime()
+    -- create frames
+    -- anchor & background
+    self.party_parent = CreateFrame("Frame", "GladiusExPartyFrame", UIParent)
+    self.arena_parent = CreateFrame("Frame", "GladiusExArenaFrame", UIParent)
+    self.party_parent:Hide()
+    self.arena_parent:Hide()
+
+    self.arena_anchor, self.arena_background = self:CreateAnchor("arena")
+    self.party_anchor, self.party_background = self:CreateAnchor("party")
+
+    -- update roster
+    self:UpdateAllGUIDs()
+
+    -- update range checkers
+    self:UpdateRangeCheckers()
+
+    -- enable modules
+    self:EnableModules()
+
+    -- init options
+    self:SetupOptions()
+
+    self:RegisterRuntimeEvents()
 end
 
 local first_run = false
@@ -428,6 +481,7 @@ function GladiusEx:OnDisable()
 end
 
 function GladiusEx:OnProfileChanged(event, database, newProfileKey)
+    self:EnsureRuntime()
     -- update frame and modules on profile change
     wipe(self.db)
 
@@ -443,6 +497,7 @@ function GladiusEx:OnProfileChanged(event, database, newProfileKey)
 end
 
 function GladiusEx:SetTesting(count)
+    self:EnsureRuntime()
     self.test = count
     self:UpdateFrames()
 
@@ -529,12 +584,16 @@ function GladiusEx:GetAlwaysUpFrameForPlayers()
             foundMax = foundMax or 0
             local frame = _G["AlwaysUpFrame"..i.."Text"]
             if frame and frame.GetText then
-                local _,tmp = strsplit(":", frame:GetText(), 2)
-                tmp = strsplit("Players", tmp)
-                if tonumber(tmp) then
-                    foundMax = max(tonumber(tmp), foundMax)
-                else
-                    return nil
+                local text = frame:GetText()
+                if type(text) == "string" and text ~= "" then
+                    local _, tmp = strsplit(":", text, 2)
+                    if tmp then
+                        tmp = strsplit("Players", tmp)
+                        local playerCount = tonumber(tmp)
+                        if playerCount then
+                            foundMax = max(playerCount, foundMax)
+                        end
+                    end
                 end
             end
         end
@@ -642,6 +701,7 @@ function GladiusEx:UpdateFrames()
 end
 
 function GladiusEx:ShowFrames()
+    self:EnsureRuntime()
     if InCombatLockdown() then
         self:QueueUpdate()
     end
@@ -677,6 +737,7 @@ function GladiusEx:ShowFrames()
 end
 
 function GladiusEx:HideFrames()
+    if not self.party_parent then return end
     if InCombatLockdown() then
         self:QueueUpdate()
     end
@@ -701,11 +762,11 @@ function GladiusEx:HideFrames()
 end
 
 function GladiusEx:IsPartyShown()
-    return self.party_parent:IsShown()
+    return self.party_parent and self.party_parent:IsShown()
 end
 
 function GladiusEx:IsArenaShown()
-    return self.arena_parent:IsShown()
+    return self.arena_parent and self.arena_parent:IsShown()
 end
 
 function GladiusEx:PLAYER_ENTERING_WORLD()
@@ -713,6 +774,7 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
 
     -- check if we are entering or leaving an arena
     if instanceType == "arena" then
+        self:EnsureRuntime()
         self:SetTesting(false)
         
         log("ENABLE LOGGING")
@@ -729,15 +791,16 @@ function GladiusEx:PLAYER_ENTERING_WORLD()
         -- performing the same activities as ARENA_OPPONENT_UPDATE for each unit
         self:UpdateFrames()
     else
+        if not self.runtimeInitialized then return end
         local spectate = self:GetModule("Spectate", true)
         if spectate and spectate:IsSpectating() then
             spectate:StopSpectate()
         end
         
-        self:CheckFirstRun()
 
         if not self:IsTesting() then
             self:HideFrames()
+            self:SuspendRuntime()
         end
         if logging then log("DISABLE LOGGING") end
     end
@@ -862,6 +925,11 @@ function GladiusEx:ClearUpdateQueue()
 end
 
 function GladiusEx:PLAYER_REGEN_ENABLED()
+    if select(2, IsInInstance()) ~= "arena" and not self:IsTesting() and not self:IsSpectating() then
+        if self.runtimeInitialized then self:HideFrames() end
+        self:SuspendRuntime()
+        return
+    end
     if self:IsUpdatePending() then
         self:UpdateFrames()
     end

@@ -127,6 +127,7 @@ function Spectate:IsSpectating()
 end
 
 function Spectate:StartSpectate()
+    GladiusEx:EnsureRuntime()
     self.isSpectating = true
     self.units = {}
     self.initUnits = {}

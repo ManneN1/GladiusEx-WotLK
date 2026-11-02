@@ -1,4 +1,4 @@
-﻿local fn = LibStub("LibFunctional-1.0")
+local fn = LibStub("LibFunctional-1.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("GladiusEx")
 
 GladiusEx.default_bar_texture = "Wglass (GladiusEx)"
@@ -910,6 +910,7 @@ function GladiusEx:CopyGroupModuleSettings(module, dst_group, src_group)
 end
 
 function GladiusEx:ShowOptionsDialog()
+    self:EnsureRuntime()
     -- InterfaceOptionsFrame_OpenToCategory("GladiusEx")
     LibStub("AceConfigDialog-3.0"):Open("GladiusEx")
 end
