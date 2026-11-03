@@ -197,7 +197,8 @@ end
 function PowerBar:Show(unit)
     if not self.frame[unit] then return end
 
-    -- show frame
+    -- Restore visibility after OnDisable made retained bars transparent.
+    self.frame[unit]:SetAlpha(1)
     self.frame[unit]:Show()
 end
 
