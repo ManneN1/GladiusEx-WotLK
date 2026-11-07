@@ -106,14 +106,6 @@ local spellsAndProvidersByCategory = {
 	},
 	disorient = {
 		--[[ DISORIENTS ]]--
-		-- Dragon's Breath
-		[31661] = true,
-		[33041] = true,
-		[33042] = true,
-		[33043] = true,
-		[42949] = true,
-		[42950] = true,
-		
 		-- Hungering Cold
 		[49203] = true,
 		
@@ -454,8 +446,18 @@ local spellsAndProvidersByCategory = {
 		[64044] = true,
 	},
 	scatter = {
+		-- Scatter Shot
 		[19503] = true,
 		[37506] = true,
+
+		-- Dragon's Breath
+		[31661] = true,
+		[33041] = true,
+		[33042] = true,
+		[33043] = true,
+		[42949] = true,
+		[42950] = true,
+		
 	},
 	cheapshot = {
 		-- Cheap Shot
