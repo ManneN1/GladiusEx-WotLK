@@ -112,7 +112,7 @@ function Highlight:UNIT_TARGET(event, unit)
         end
 
         -- focus
-        if (focusGUID and UnitGUID(arenaUnit) == focusGUID) then
+        if (self.db[arenaUnit].highlightFocus and focusGUID and UnitGUID(arenaUnit) == focusGUID) then
             if (frame.priority < self.db[arenaUnit].highlightFocusPriority) then
                 frame.priority = self.db[arenaUnit].highlightFocusPriority
                 frame:SetBackdropBorderColor(self.db[arenaUnit].highlightFocusColor.r, self.db[arenaUnit].highlightFocusColor.g, self.db[arenaUnit].highlightFocusColor.b, self.db[arenaUnit].highlightFocusColor.a)
@@ -120,7 +120,7 @@ function Highlight:UNIT_TARGET(event, unit)
         end
 
         -- player target
-        if (playerTargetGUID and UnitGUID(arenaUnit) == playerTargetGUID) then
+        if (self.db[arenaUnit].highlightTarget and playerTargetGUID and UnitGUID(arenaUnit) == playerTargetGUID) then
             if (frame.priority < self.db[arenaUnit].highlightTargetPriority) then
                 frame.priority = self.db[arenaUnit].highlightTargetPriority
                 frame:SetBackdropBorderColor(self.db[arenaUnit].highlightTargetColor.r, self.db[arenaUnit].highlightTargetColor.g, self.db[arenaUnit].highlightTargetColor.b, self.db[arenaUnit].highlightTargetColor.a)
